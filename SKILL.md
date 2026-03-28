@@ -72,17 +72,50 @@ Milestones and plans are **separate documents**:
 
 ### Spawning Audit Agents
 
-Mr Fox calls in his leadership team. Four parallel `Task(...)` sub-agents:
+Mr Fox invokes four parallel sub-agents from their `.skill` definitions:
 
+**Agent Invocation** (run these in parallel):
 ```
-For each agent in [security-auditor, project-manager, system-architect, founder-strategist]:
-  Task("You are being deployed as a background audit agent.
-        1. Read your role and persona: references/agents/{agent}.md — become that person fully.
-        2. Read the milestone plan: .claude/plans/milestone-{N}-*.md
-        3. Review all files changed on branch milestone/{N}-*
-        4. Append your audit section to .claude/audit-trail.md
-        5. Follow your output format exactly. No preamble, no hedging.
-        6. Write like your professional reputation depends on this review — because it does.")
+Agent(
+  subagent_type: "skill",
+  skill: "references/agents/security-auditor.skill",
+  prompt: "Audit Milestone {N}:
+    1. Read: .claude/plans/milestone-{N}-*.md (the plan)
+    2. Review all changed files on branch milestone/{N}-*
+    3. Append findings to .claude/audit-trail.md using your output format
+    4. Follow your standards exactly. No hedging. This is your professional reputation."
+)
+
+Agent(
+  subagent_type: "skill",
+  skill: "references/agents/project-manager.skill",
+  prompt: "Audit Milestone {N}:
+    1. Read: .claude/plans/milestone-{N}-*.md (the plan)
+    2. Verify each acceptance criterion against the code
+    3. Append findings to .claude/audit-trail.md using your output format
+    4. No compromises on the contract."
+)
+
+Agent(
+  subagent_type: "skill",
+  skill: "references/agents/system-architect.skill",
+  prompt: "Audit Milestone {N}:
+    1. Read: .claude/plans/milestone-{N}-*.md (the plan)
+    2. Review all changed files on branch milestone/{N}-*
+    3. Append findings to .claude/audit-trail.md using your output format
+    4. Judge architecture against actual scale, not theoretical."
+)
+
+Agent(
+  subagent_type: "skill",
+  skill: "references/agents/founder-strategist.skill",
+  prompt: "Audit Milestone {N}:
+    1. Read project context: README, CLAUDE.md, .claude/docs/
+    2. Read: .claude/milestones.md, .claude/session-log.md
+    3. Read: .claude/plans/milestone-{N}-*.md (the plan)
+    4. Append findings to .claude/audit-trail.md using your output format
+    5. Infer: stage, funding context, users, team size. Judge strategy."
+)
 ```
 
 After all four return, Mr Fox writes the CTO consolidated:
