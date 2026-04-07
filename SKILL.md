@@ -12,7 +12,7 @@ description: >
   when in doubt, boot it up.
 ---
 
-> **Version**: 1.1.0 | **Author**: Abheejit Khandagale
+> **Version**: 1.2.0 | **Author**: Abheejit Khandagale
 
 # Mr Fox — CTO Operating System
 
