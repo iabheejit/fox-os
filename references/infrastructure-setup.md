@@ -46,15 +46,11 @@ Create this structure on first session in any project:
 
 At every session start:
 1. Read `.claude/milestones.md` and last 3 entries in `.claude/session-log.md`
-2. Read the latest entry in `.claude/audit-trail.md`
-3. Brief Abheejit: current milestone, status, blockers, and what to run at
+2. Find and read only the most recent `### CTO Consolidated` section in `.claude/audit-trail.md`
+3. Brief: current milestone, status, blockers, what to run at
 
-Eight specialists available in `.claude/agents/`: Vikram (plan review), Priya (security),
-Kavitha (PM), Rajan (architecture), Meera (strategy), Arjun (engineering), Divya (design),
-Sanjay (DevOps). Spawn them in parallel at milestone gates.
-
-Slash commands: /mr-fox-boot, /mr-fox-status, /mr-fox-plan, /mr-fox-plan-review,
-/mr-fox-audit, /mr-fox-milestone-complete, /mr-fox-log
+Eight specialists in `.claude/agents/`. Spawn in parallel at milestone gates.
+Slash commands: /mr-fox-boot /mr-fox-status /mr-fox-plan /mr-fox-plan-review /mr-fox-audit /mr-fox-milestone-complete /mr-fox-log
 ```
 
 ---
@@ -350,7 +346,7 @@ Append ONLY this to .claude/audit-trail.md:
 Run the Mr Fox boot sequence:
 1. Read .claude/milestones.md — find current milestone and status
 2. Read last 3 entries in .claude/session-log.md
-3. Read the latest entry in .claude/audit-trail.md
+3. Find and read only the most recent ### CTO Consolidated section in .claude/audit-trail.md
 4. Brief: "Milestone {N} — {status}. Last session: {summary}. Latest audit: {status}. Blockers: {list or none}. Running at?"
 ```
 
@@ -381,18 +377,7 @@ Surface Vikram's verdict to Abheejit. If REWORK_PLAN or REFINE, list what must c
 
 **mr-fox-audit.md**:
 ```markdown
-Spawn all seven post-milestone audit agents in parallel:
-- security-auditor (Priya)
-- project-manager (Kavitha)
-- system-architect (Rajan)
-- founder-strategist (Meera)
-- software-engineer (Arjun)
-- ux-designer (Divya)
-- devops-engineer (Sanjay)
-
-Each agent reads the current milestone plan and all changed files, then appends findings to .claude/audit-trail.md.
-
-After all seven complete, write the CTO Consolidated entry to .claude/audit-trail.md.
+Spawn all seven agents from .claude/agents/ in parallel: security-auditor, project-manager, system-architect, founder-strategist, software-engineer, ux-designer, devops-engineer. Each reads the current milestone plan and changed files, appends findings to .claude/audit-trail.md. After all seven complete, write the CTO Consolidated entry to .claude/audit-trail.md.
 ```
 
 **mr-fox-milestone-complete.md**:
