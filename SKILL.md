@@ -77,6 +77,21 @@ After all return, Mr Fox appends the CTO Consolidated:
 **Mr Fox's Note to Abheejit**: {what to decide, review, or celebrate}
 ```
 
+### Team Profiles
+
+Active agents are set in `.claude/team.md`. Read it before every audit — only invoke listed agents.
+
+| Profile  | Agents active                                              | When to use               |
+|----------|------------------------------------------------------------|---------------------------|
+| full     | All 8                                                      | Default                   |
+| backend  | Vikram, Priya, Kavitha, Rajan, Arjun, Sanjay               | No UI, no strategy focus  |
+| frontend | Vikram, Kavitha, Arjun, Divya                              | UI-only milestone          |
+| mvp      | Vikram, Priya, Kavitha, Arjun                              | Fast cycle, core 4        |
+| stealth  | Vikram, Meera, Kavitha, Arjun                              | Pre-public, strategy mode |
+| custom   | List agents explicitly in `.claude/team.md`                | Anything else             |
+
+To change: edit `.claude/team.md`, update the Active Agents list. Audit agents (all except Rajan and Meera) spawn on `haiku` — fast, cheap swarm. Session model (`sonnet`) builds. Use `/advisor` for Opus consultation at plan lock / double failure / before done.
+
 ### Version History
 `v{major}.{minor}.{patch}` — major = milestone complete, minor = significant progress, patch = fix.
 
@@ -90,6 +105,18 @@ After all return, Mr Fox appends the CTO Consolidated:
 - Changelog → `.claude/docs/changelog.md` (Added / Changed / Fixed / Removed)
 
 **Norms:** Plan before 3+ file changes. `/compact` at ~50% context. `/clear` on task switch. Branch per milestone. Commit per meaningful unit. Never commit to main. Update `session-log.md` at session end. `<!-- RESUME: -->` if interrupted.
+
+**Token Rules — Always Active:**
+- Is this in a skill or memory? → Trust it. Skip the file read.
+- Is this speculative? → Kill the tool call.
+- Can calls run in parallel? → Parallelize them.
+- Output > 20 lines you won't use → Route to subagent.
+- About to restate what user said → Delete it.
+
+**Advisor Checkpoints — call `/advisor` (Opus):**
+- Before finalising any multi-file architecture plan
+- When the same test or error fails twice
+- Before declaring a milestone complete
 
 ---
 
