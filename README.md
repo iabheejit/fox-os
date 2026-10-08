@@ -139,14 +139,14 @@ Plus auto-generated docs at milestone completion: API reference, architecture de
 
 ```bash
 mkdir -p ~/.claude/skills
-git clone https://github.com/iabheejit/mr-fox-os ~/.claude/skills/mr-fox
+git clone https://github.com/iabheejit/fox-os ~/.claude/skills/mr-fox
 ```
 
 Works across Claude Code CLI, VS Code (Claude Code extension), and Cursor. The skill directory is shared across all platforms.
 
 ### First Session in a New Project
 
-Run `/mr-fox-boot` or say "Mr Fox, set up this project."
+Say "Mr Fox, set up this project" (or run `/mr-fox`). The `/mr-fox-*` slash commands don't exist yet on a fresh project — the boot creates them.
 
 Mr Fox creates the full project structure:
 
@@ -214,22 +214,25 @@ Or just talk naturally. Mr Fox activates on: *"what's our status"*, *"run the au
 ## Repository Structure
 
 ```
-mr-fox-os/
+fox-os/
 ├── SKILL.md                    # Skill entrypoint — Mr Fox's core identity and lifecycle
 ├── CLAUDE.md                   # Cross-platform bootstrap via @SKILL.md import
-├── references/
-│   ├── infrastructure-setup.md # First-run setup — creates all templates
-│   ├── plan-template.md        # Milestone plan template
-│   └── agents/                 # Full specialist definitions and invocable skill files
-│       ├── plan-reviewer.*
-│       ├── security-auditor.*
-│       ├── project-manager.*
-│       ├── system-architect.*
-│       ├── founder-strategist.*
-│       ├── software-engineer.*
-│       ├── ux-designer.*
-│       └── devops-engineer.*
+└── references/
+    ├── infrastructure-setup.md # First-run setup — the single source for every agent,
+    │                           #   command and state-file template installed into a project
+    ├── plan-template.md        # Milestone plan template
+    └── personas/               # Long-form specialist backstories (reference only, not executed)
+        ├── plan-reviewer.md
+        ├── security-auditor.md
+        ├── project-manager.md
+        ├── system-architect.md
+        ├── founder-strategist.md
+        ├── software-engineer.md
+        ├── ux-designer.md
+        └── devops-engineer.md
 ```
+
+The agents that actually run live in each project's `.claude/agents/`, written by `infrastructure-setup.md` on first boot. The six auto-fix specialists run on `haiku`; Rajan and Meera (read-only, structural reasoning) run on the session model.
 
 ---
 

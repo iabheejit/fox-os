@@ -103,6 +103,7 @@ Each file follows Claude Code subagent format: YAML frontmatter + instructions.
 ```markdown
 ---
 name: plan-reviewer
+model: haiku
 description: Vikram — Principal EM, 15yr. Reviews milestone plans BEFORE coding starts. Verifies acceptance criteria are testable, scope is protected, dependencies are named, milestone is right-sized. Auto-fixes REFINE issues (rewrites ambiguous criteria in plan doc directly). Escalates REWORK_PLAN. Returns READY/REFINE/REWORK_PLAN. Invoke before any new milestone begins.
 tools: Read, Grep, Write, Edit, Bash
 ---
@@ -139,6 +140,7 @@ Append ONLY this to .claude/audit-trail.md:
 ```markdown
 ---
 name: security-auditor
+model: haiku
 description: Priya — Principal AppSec, 16yr. Audits code for exploitable vulnerabilities, secrets leakage, supply chain risk, broken auth, and missing encryption. Auto-fixes WARN issues (rate limiting, CORS, input sanitisation, .gitignore) on branch audit/fix-priya-m{N}. Escalates FAIL issues. Returns PASS/WARN/FAIL. Invoke at milestone completion.
 tools: Read, Grep, Write, Edit, Bash
 ---
@@ -172,6 +174,7 @@ Append ONLY this to .claude/audit-trail.md:
 ```markdown
 ---
 name: project-manager
+model: haiku
 description: Kavitha — Sr. TPM, 14yr. Audits milestone delivery against acceptance criteria, flags scope creep, verifies test coverage proves acceptance criteria, assesses demo/report readiness. Auto-fixes missing test stubs and doc gaps on branch audit/fix-kavitha-m{N}. Escalates BLOCKED. Returns ON_TRACK/DRIFTED/BLOCKED. Invoke at milestone completion.
 tools: Read, Grep, Write, Edit, Bash
 ---
@@ -274,6 +277,7 @@ Append ONLY this to .claude/audit-trail.md:
 ```markdown
 ---
 name: software-engineer
+model: haiku
 description: Arjun — Staff SWE, 13yr. Audits code quality, naming clarity, test fidelity (does the test actually fail if the feature breaks?), duplication risk, CI/CD hygiene, and dead code. Auto-fixes NEEDS_WORK issues (renames, dead code removal, test fixes) on branch audit/fix-arjun-m{N}. Escalates REFACTOR. Returns CLEAN/NEEDS_WORK/REFACTOR. Invoke at milestone completion.
 tools: Read, Grep, Write, Edit, Bash
 ---
@@ -312,6 +316,7 @@ Append ONLY this to .claude/audit-trail.md:
 ```markdown
 ---
 name: ux-designer
+model: haiku
 description: Divya — Principal UX, 11yr. Audits user flows for friction and drop-off risk, information hierarchy, feedback/error/loading states, accessibility gaps, and mobile behaviour. Auto-fixes ITERATE issues (missing error messages, empty states, aria labels, vague button text) on branch audit/fix-divya-m{N}. Escalates REDESIGN. Returns APPROVED/ITERATE/REDESIGN/N/A. Invoke at milestone completion for any milestone with user-facing changes.
 tools: Read, Grep, Write, Edit, Bash
 ---
@@ -352,6 +357,7 @@ Append ONLY this to .claude/audit-trail.md:
 ```markdown
 ---
 name: devops-engineer
+model: haiku
 description: Sanjay — Platform/SRE, 12yr. Audits operational readiness: deploy process, environment config, observability (logging, health endpoints, alerting), graceful failure behaviour, CI/CD pipeline, and backup/recovery. Auto-fixes OPERATIONAL_RISK issues (health endpoints, logging, .env.example, runbooks) on branch audit/fix-sanjay-m{N}. Escalates NOT_SHIPPABLE. Returns SHIP_READY/OPERATIONAL_RISK/NOT_SHIPPABLE. Invoke at milestone completion.
 tools: Read, Grep, Write, Edit, Bash
 ---
@@ -430,7 +436,11 @@ Surface Vikram's verdict to Abheejit. If REWORK_PLAN or REFINE, list what must c
 
 **mr-fox-audit.md**:
 ```markdown
-Read .claude/team.md to get the active team profile. Spawn only the listed agents in parallel from .claude/agents/. Each reads the current milestone plan and changed files, appends findings to .claude/audit-trail.md. Six agents (all except system-architect and founder-strategist) will auto-fix lower-severity issues on their own branches (audit/fix-{name}-m{N}) and escalate blocking issues. After all complete, write the CTO Consolidated entry to .claude/audit-trail.md, including Auto-Fixed and Escalations Requiring Decision sections.
+Read .claude/team.md to get the active team profile. Spawn only the listed agents in parallel from .claude/agents/. Each reads the current milestone plan and changed files, appends findings to .claude/audit-trail.md.
+
+Six agents (all except system-architect and founder-strategist) auto-fix lower-severity issues on their own branches (audit/fix-{name}-m{N}) and escalate blocking issues. Spawn each of these six with `isolation: "worktree"` — they create branches and commit, and six agents doing `git checkout -b` in one shared working tree will clobber each other. system-architect and founder-strategist are read-only and need no isolation.
+
+After all complete, write the CTO Consolidated entry to .claude/audit-trail.md, including Auto-Fixed and Escalations Requiring Decision sections.
 ```
 
 **mr-fox-apply-fixes.md**:
@@ -439,7 +449,7 @@ Review and merge the auto-fix branches from the last audit. For each milestone {
 
 1. List all audit/fix-*-m{N} branches that exist
 2. For each branch:
-   - Run git diff main..audit/fix-{name}-m{N} to show what changed
+   - Run git diff milestone/{N}-{slug}..audit/fix-{name}-m{N} to show only the specialist's changes (diffing against main would include the whole milestone)
    - Present the diff with specialist name and a one-line summary
    - Ask: "Merge this? (yes/no/show more)"
 3. For approved branches: merge into the current milestone branch with git merge --no-ff
@@ -452,7 +462,7 @@ Review and merge the auto-fix branches from the last audit. For each milestone {
 Complete the current milestone:
 1. Verify all acceptance criteria in the plan are met — read the code and tests, not developer claims
 2. Update milestone status to COMPLETED in .claude/milestones.md
-3. Read .claude/team.md — spawn only the listed audit agents in parallel
+3. Read .claude/team.md — spawn only the listed audit agents in parallel (auto-fix agents with `isolation: "worktree"`)
 4. After audits complete, write CTO Consolidated to .claude/audit-trail.md (include Auto-Fixed and Escalations Requiring Decision)
 5. If auto-fix branches exist, prompt: "Run /mr-fox-apply-fixes to review and merge them before proceeding."
 6. Generate/update docs: .claude/docs/api/, .claude/docs/architecture/, .claude/docs/changelog.md
