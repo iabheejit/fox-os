@@ -85,14 +85,16 @@ Active agents are set in `.claude/team.md`. Read it before every audit — only 
 
 | Profile  | Agents active                                              | When to use               |
 |----------|------------------------------------------------------------|---------------------------|
-| full     | All 8                                                      | Default                   |
+| min      | Vikram, Priya, Arjun                                       | Hotfix, spike, tiny scope |
+| normal   | Vikram, Priya, Kavitha, Rajan, Arjun                       | Standard milestone        |
+| full     | All 8                                                      | Pre-release, launch, raise|
 | backend  | Vikram, Priya, Kavitha, Rajan, Arjun, Sanjay               | No UI, no strategy focus  |
 | frontend | Vikram, Kavitha, Arjun, Divya                              | UI-only milestone          |
 | mvp      | Vikram, Priya, Kavitha, Arjun                              | Fast cycle, core 4        |
 | stealth  | Vikram, Meera, Kavitha, Arjun                              | Pre-public, strategy mode |
 | custom   | List agents explicitly in `.claude/team.md`                | Anything else             |
 
-To change: edit `.claude/team.md`, update the Active Agents list. Audit agents (all except Rajan and Meera) spawn on `haiku` — fast, cheap swarm. Session model (`sonnet`) builds. Use `/advisor` for Opus consultation at plan lock / double failure / before done.
+Default is `min`. To change: run `/mr-fox-mode min|normal|full` (or edit `.claude/team.md` for specialty profiles). Vikram runs in every mode. Audit agents (all except Rajan and Meera) spawn on `haiku` — fast, cheap swarm. Session model (`sonnet`) builds. Use `/advisor` for Opus consultation at plan lock / double failure / before done.
 
 ### Version History
 `v{major}.{minor}.{patch}` — major = milestone complete, minor = significant progress, patch = fix.
@@ -106,7 +108,7 @@ To change: edit `.claude/team.md`, update the Active Agents list. Audit agents (
 - Architecture → `.claude/docs/architecture/` (`system-overview.md`, `data-models.md`, `decisions.md` — append-only ADR)
 - Changelog → `.claude/docs/changelog.md` (Added / Changed / Fixed / Removed)
 
-**Norms:** Plan before 3+ file changes. `/compact` at ~50% context. `/clear` on task switch. Branch per milestone. Commit per meaningful unit. Never commit to main. Update `session-log.md` at session end. `<!-- RESUME: -->` if interrupted.
+**Norms:** Plan before 3+ file changes. `/compact` at ~50% context. `/clear` on task switch. Branch per milestone. Commit per meaningful unit. Never commit to main (enforced by `.claude/hooks/block-main.sh`, not just this sentence). Update `session-log.md` at session end. `<!-- RESUME: -->` if interrupted.
 
 **Token Rules — Always Active:**
 - Is this in a skill or memory? → Trust it. Skip the file read.
@@ -126,6 +128,7 @@ To change: edit `.claude/team.md`, update the Active Agents list. Audit agents (
 
 - `/mr-fox-boot` — Boot sequence: read state, brief status.
 - `/mr-fox-status` — One-liner: milestone, status, blockers.
+- `/mr-fox-mode` — Set audit depth: min / normal / full.
 - `/mr-fox-plan` — New milestone: draft → Vikram review → confirm → branch.
 - `/mr-fox-plan-review` — Spawn Vikram against current plan.
 - `/mr-fox-audit` — Spawn all seven auditors now.

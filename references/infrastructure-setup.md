@@ -10,7 +10,10 @@ Create this structure on first session in any project:
     ├── audit-trail.md          # All audit reports — plan reviews + post-milestone
     ├── versions.md             # Automatic version history
     ├── session-log.md          # Per-session work summaries
-    ├── team.md                 # Active team profile (edit to select specialists)
+    ├── team.md                 # Active mode/profile (min | normal | full | ...)
+    ├── settings.json           # PreToolUse hook registration (blocks commits to main)
+    ├── hooks/
+    │   └── block-main.sh       # Enforces "never commit to main" — not just a prompt
     ├── agents/                 # Specialist subagents (Claude Code native format)
     │   ├── plan-reviewer.md    # Vikram — pre-coding plan gate
     │   ├── security-auditor.md # Priya — security & supply chain
@@ -23,6 +26,7 @@ Create this structure on first session in any project:
     ├── commands/               # Slash commands (VS Code / Cursor / CLI)
     │   ├── mr-fox-boot.md
     │   ├── mr-fox-status.md
+    │   ├── mr-fox-mode.md
     │   ├── mr-fox-plan.md
     │   ├── mr-fox-plan-review.md
     │   ├── mr-fox-audit.md
@@ -52,7 +56,7 @@ At every session start:
 3. Brief: current milestone, status, blockers, what to run at
 
 Eight specialists in `.claude/agents/`. Active team profile in `.claude/team.md` — only invoke listed agents.
-Slash commands: /mr-fox-boot /mr-fox-status /mr-fox-plan /mr-fox-plan-review /mr-fox-audit /mr-fox-apply-fixes /mr-fox-milestone-complete /mr-fox-log
+Slash commands: /mr-fox-boot /mr-fox-status /mr-fox-mode /mr-fox-plan /mr-fox-plan-review /mr-fox-audit /mr-fox-apply-fixes /mr-fox-milestone-complete /mr-fox-log
 
 ## Token Rules — Always Active
 Is this in a skill or memory?   → Trust it. Skip the file read.
@@ -69,10 +73,14 @@ About to restate what user said → Delete it.
 ```markdown
 # Active Team Profile
 
-## Current Profile: full
+## Current Profile: min
 
-<!-- Profiles:
-  full      — all 8: Vikram, Priya, Kavitha, Rajan, Meera, Arjun, Divya, Sanjay
+<!-- Modes (depth dial — change with /mr-fox-mode min|normal|full):
+  min       — Vikram, Priya, Arjun (3: plan gate, security, code). Cheapest. Hotfixes, spikes, tiny milestones.
+  normal    — Vikram, Priya, Kavitha, Rajan, Arjun (5: + delivery, architecture). Default for real milestones.
+  full      — all 8: Vikram, Priya, Kavitha, Rajan, Meera, Arjun, Divya, Sanjay. Pre-release, funding, launch.
+
+Specialty profiles (same file, same mechanism):
   backend   — Vikram, Priya, Kavitha, Rajan, Arjun, Sanjay (no UX, no strategy)
   frontend  — Vikram, Kavitha, Arjun, Divya (no security, ops, arch, strategy)
   mvp       — Vikram, Priya, Kavitha, Arjun (core 4 — fast cycle)
@@ -83,12 +91,8 @@ About to restate what user said → Delete it.
 ## Active Agents
 - plan-reviewer      # Vikram — always runs before coding
 - security-auditor   # Priya
-- project-manager    # Kavitha
-- system-architect   # Rajan
-- founder-strategist # Meera
 - software-engineer  # Arjun
-- ux-designer        # Divya
-- devops-engineer    # Sanjay
+<!-- normal adds: project-manager, system-architect · full adds: + founder-strategist, ux-designer, devops-engineer -->
 ```
 
 ---
@@ -415,6 +419,16 @@ One-liner status check. Read .claude/milestones.md and return:
 "Milestone {N}: {name} — {status}. Blockers: {list or none}."
 ```
 
+**mr-fox-mode.md**:
+```markdown
+Set the audit depth. Argument: min | normal | full (no argument: show current mode and its agents).
+
+1. Rewrite `## Current Profile:` in .claude/team.md to the chosen mode
+2. Rewrite `## Active Agents` to match the mode table in the comment block (min: plan-reviewer, security-auditor, software-engineer · normal: + project-manager, system-architect · full: all 8)
+3. Confirm in one line: "Mode: {mode} — {agent names}. Est. cost: {3|5|8} agents per audit."
+Vikram (plan-reviewer) is always active in every mode.
+```
+
 **mr-fox-plan.md**:
 ```markdown
 Start a new milestone:
@@ -481,6 +495,58 @@ Append a session summary to .claude/session-log.md in this format:
 **Decisions**: {any decisions made or deferred}
 **Resume**: {<!-- RESUME: specific instruction if interrupted mid-task -->}
 ```
+
+---
+
+## .claude/hooks/block-main.sh — Enforce "Never Commit to Main"
+
+CLAUDE.md is context, not enforcement. This hook is enforced by the harness: it runs before every Bash call and blocks git writes on `main`/`master`, or pushes that target them. Requires `jq`. Make it executable (`chmod +x .claude/hooks/block-main.sh`).
+
+```bash
+#!/usr/bin/env bash
+# PreToolUse hook (Bash): block git commit/push/merge/rebase/reset on main or master.
+# Exit 2 = block and show stderr to Claude. Enforced by the harness, not by prompt.
+input=$(cat)
+cmd=$(printf '%s' "$input" | jq -r '.tool_input.command // empty')
+[ -z "$cmd" ] && exit 0
+
+# Only inspect git write operations
+printf '%s' "$cmd" | grep -Eq '(^|[;&|[:space:]])git[[:space:]]+([^;&|]*[[:space:]])?(commit|push|merge|rebase|reset|cherry-pick|am)\b' || exit 0
+
+branch=$(git rev-parse --abbrev-ref HEAD 2>/dev/null)
+protected='^(main|master)$'
+
+# 1. Writing while checked out on a protected branch
+if [[ "$branch" =~ $protected ]]; then
+  echo "BLOCKED: on '$branch'. Mr Fox never commits to main. Create milestone/{N}-{slug} first." >&2
+  exit 2
+fi
+
+# 2. Pushing to a protected branch from elsewhere (git push origin main, HEAD:main, --force to main)
+if printf '%s' "$cmd" | grep -Eq 'git[[:space:]]+push\b.*([[:space:]:]|/)(main|master)([[:space:]]|$)'; then
+  echo "BLOCKED: push targets main/master. Push your milestone branch and merge via PR." >&2
+  exit 2
+fi
+exit 0
+```
+
+**.claude/settings.json**:
+```json
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          { "type": "command", "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/block-main.sh" }
+        ]
+      }
+    ]
+  }
+}
+```
+
+If `.claude/settings.json` already exists, merge the `PreToolUse` entry — don't overwrite.
 
 ---
 
