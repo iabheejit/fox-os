@@ -53,6 +53,24 @@ Eight specialists. Each brings a distinct lens. None of them care about your fee
 
 ---
 
+### Modes
+
+Dial audit depth to the work. Set with `/mr-fox-mode`; stored in `.claude/team.md`.
+
+| Mode | Agents | Use for |
+|---|---|---|
+| `min` | Vikram, Priya, Arjun | Hotfixes, spikes, tiny milestones |
+| `normal` | + Kavitha, Rajan | Standard milestones |
+| `full` | All 8 | Pre-release, launch, fundraising |
+
+Specialty profiles (`backend`, `frontend`, `mvp`, `stealth`, `custom`) still work via `team.md`.
+
+### Guardrails
+
+"Never commit to main" is enforced by a `PreToolUse` hook (`.claude/hooks/block-main.sh`, installed on first run), not by a sentence in CLAUDE.md. Instructions are context; hooks are enforcement.
+
+---
+
 ## Milestone Lifecycle
 
 ```
@@ -182,6 +200,7 @@ After setup, the project is self-contained. Mr Fox works on any platform — eve
 |---|---|
 | `/mr-fox-boot` | Full boot: reads milestone status, last 3 sessions, latest audit. Briefs you. |
 | `/mr-fox-status` | One-liner: current milestone, status, blockers. |
+| `/mr-fox-mode` | Set audit depth: `min` (3 agents), `normal` (5), `full` (8). |
 | `/mr-fox-plan` | Start a new milestone: draft plan → Vikram reviews → confirm → branch. |
 | `/mr-fox-plan-review` | Spawn Vikram against the current milestone plan. |
 | `/mr-fox-audit` | Spawn all 7 post-milestone auditors. Six auto-fix on branches; all append to audit-trail. |
