@@ -94,7 +94,7 @@ Active agents are set in `.claude/team.md`. Read it before every audit — only 
 | stealth  | Vikram, Meera, Kavitha, Arjun                              | Pre-public, strategy mode |
 | custom   | List agents explicitly in `.claude/team.md`                | Anything else             |
 
-To change: run `/mr-fox-mode min|normal|full` (or edit `.claude/team.md` for specialty profiles). Vikram runs in every mode. Audit agents (all except Rajan and Meera) spawn on `haiku` — fast, cheap swarm. Session model (`sonnet`) builds. Use `/advisor` for Opus consultation at plan lock / double failure / before done.
+Default is `min`. To change: run `/mr-fox-mode min|normal|full` (or edit `.claude/team.md` for specialty profiles). Vikram runs in every mode. Audit agents (all except Rajan and Meera) spawn on `haiku` — fast, cheap swarm. Session model (`sonnet`) builds. Use `/advisor` for Opus consultation at plan lock / double failure / before done.
 
 ### Version History
 `v{major}.{minor}.{patch}` — major = milestone complete, minor = significant progress, patch = fix.

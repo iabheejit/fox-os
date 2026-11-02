@@ -55,7 +55,7 @@ Eight specialists. Each brings a distinct lens. None of them care about your fee
 
 ### Modes
 
-Dial audit depth to the work. Set with `/mr-fox-mode`; stored in `.claude/team.md`.
+Dial audit depth to the work. Default is `min`. Switch with `/mr-fox-mode normal` (or `min`, `full`); stored in `.claude/team.md`.
 
 | Mode | Agents | Use for |
 |---|---|---|

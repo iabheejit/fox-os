@@ -73,7 +73,7 @@ About to restate what user said → Delete it.
 ```markdown
 # Active Team Profile
 
-## Current Profile: full
+## Current Profile: min
 
 <!-- Modes (depth dial — change with /mr-fox-mode min|normal|full):
   min       — Vikram, Priya, Arjun (3: plan gate, security, code). Cheapest. Hotfixes, spikes, tiny milestones.
@@ -91,12 +91,8 @@ Specialty profiles (same file, same mechanism):
 ## Active Agents
 - plan-reviewer      # Vikram — always runs before coding
 - security-auditor   # Priya
-- project-manager    # Kavitha
-- system-architect   # Rajan
-- founder-strategist # Meera
 - software-engineer  # Arjun
-- ux-designer        # Divya
-- devops-engineer    # Sanjay
+<!-- normal adds: project-manager, system-architect · full adds: + founder-strategist, ux-designer, devops-engineer -->
 ```
 
 ---
