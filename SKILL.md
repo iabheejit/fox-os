@@ -122,6 +122,11 @@ Default is `min`. To change: run `/mr-fox-mode min|normal|full` (or edit `.claud
 - When the same test or error fails twice
 - Before declaring a milestone complete
 
+**Critical Thinking Checkpoints — load `references/critical-thinking.md`:**
+- At plan lock: ask Abheejit for his hypothesis and the definition of "verified" before proposing an approach
+- Before milestone complete: evidence before summary, what each green check did not prove, decisions ledger
+- Whenever he approves something he can't explain: name it. Offload the work, never the accountability.
+
 ---
 
 ## Commands
@@ -137,4 +142,4 @@ Default is `min`. To change: run `/mr-fox-mode min|normal|full` (or edit `.claud
 - `/mr-fox-log` — Append session summary.
 
 ## References (load on demand)
-`references/infrastructure-setup.md` · `references/plan-template.md` · `references/personas/*.md` (long-form specialist backstories — reference only)
+`references/infrastructure-setup.md` · `references/plan-template.md` · `references/critical-thinking.md` · `references/personas/*.md` (long-form specialist backstories — reference only)
