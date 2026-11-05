@@ -77,7 +77,7 @@ You don't run anything. Four hooks are installed into every project on first run
 
 | Hook | Fires on | Does |
 |---|---|---|
-| `fox-boot.sh` | Session start, resume, `/clear`, after compact | Briefs Mr Fox (milestone, last session, mode, orchestra, inbox). Pulls skill updates (once/24h, fast-forward only) and syncs hook scripts. If the skill is newer than the project, Mr Fox re-syncs agents and commands on his own. |
+| `fox-boot.sh` | Session start, resume, `/clear`, after compact | Briefs Mr Fox (milestone, last session, mode, orchestra, inbox). Pulls skill updates (once/30 days, fast-forward only) and syncs hook scripts. If the skill is newer than the project, Mr Fox re-syncs agents and commands on his own. |
 | `fox-sync.sh` | End of every turn, before compact, session end | Snapshots branch, commits, uncommitted files and resume marker to `.claude/.fox-sync.md`. It runs on the same lifecycle events as auto-compact, so a compact never loses where you were. |
 | `fox-voice.sh` | Any session needs input or permission | Logs to the cross-session inbox; speaks it if voice is on. |
 | `block-main.sh` | Every Bash call | Blocks commits and pushes to `main`/`master`. |
@@ -244,10 +244,10 @@ Works across Claude Code CLI, VS Code (Claude Code extension), and Cursor. The s
 
 Sessions update themselves from GitHub:
 
-- **Every session start** (at most once per 24h), `fox-boot.sh` runs `git pull --ff-only` on `~/.claude/skills/mr-fox`. It then syncs the hook scripts into the project. If the project is behind, Mr Fox re-syncs agents and commands himself.
+- **Every session start** (at most once per 30 days), `fox-boot.sh` runs `git pull --ff-only` on `~/.claude/skills/mr-fox`. It then syncs the hook scripts into the project. If the project is behind, Mr Fox re-syncs agents and commands himself.
 - **Cloud sessions or a new machine** with no skill installed: `fox-boot.sh` clones it from GitHub first. Commit `.claude/hooks/` and `.claude/settings.json` in your project so cloud sessions have the hook.
 - **Right now:** `/mr-fox-update`. Other open sessions pick it up at their next start, `/clear` or compact.
-- **Pinning or forks:** set `FOX_SKILL_REPO` to your fork, or `FOX_AUTO_UPDATE=0` to update by hand.
+- **Pinning or forks:** set `FOX_SKILL_REPO` to your fork, or `FOX_AUTO_UPDATE=0` for manual-only (`/mr-fox-update`).
 
 **Upgrading from v1.3 or earlier** (one time; older installs have no hooks to update themselves):
 

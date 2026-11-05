@@ -507,7 +507,7 @@ No local browser (cloud session): run `render`, then send the HTML file to Abhee
 
 **mr-fox-update.md**:
 ```markdown
-Update Mr Fox from GitHub now (instead of waiting for the next session start / 24h check).
+Update Mr Fox from GitHub now (instead of waiting for the next session start / 30-day check).
 1. Run `echo '{}' | FOX_UPDATE_HOURS=0 .claude/hooks/fox-boot.sh` (installs the skill if missing, pulls, syncs hook scripts)
 2. Carry out any ACTION line it prints (re-sync agents/commands/settings, write .claude/.fox-version)
 3. Report in one line: "Mr Fox v{old} → v{new}: {what changed}" or "Already on v{version}."
@@ -595,13 +595,13 @@ chmod +x .claude/hooks/*.sh
 
 | Script | Event | What it does |
 |---|---|---|
-| `fox-boot.sh` | SessionStart (startup, resume, clear, compact) | Pulls skill updates (ff-only, once/24h), syncs these scripts, flags version drift with an ACTION line, prints the boot brief + last auto-sync snapshot, records the session id |
+| `fox-boot.sh` | SessionStart (startup, resume, clear, compact) | Pulls skill updates (ff-only, once/30 days), syncs these scripts, flags version drift with an ACTION line, prints the boot brief + last auto-sync snapshot, records the session id |
 | `fox-sync.sh` | Stop, PreCompact, SessionEnd | Writes `.claude/.fox-sync.md`: branch, last commits, uncommitted files, resume marker. Runs automatically, like auto-compact |
 | `fox-voice.sh` | Notification (+ called by Mr Fox) | Logs to `~/.claude/fox-inbox.tsv`; speaks with the OS default voice when voice is on |
 | `block-main.sh` | PreToolUse (Bash) | Blocks git writes on `main`/`master` and pushes that target them (exit 2) |
 | `fox-board.sh` | none (on demand) | Renders the orchestra Kanban. Not a hook, never runs on its own |
 
-Requires `jq` or `python3`. Environment switches: `FOX_AUTO_UPDATE=0` (no clone or pull), `FOX_UPDATE_HOURS` (default 24; `0` = check now), `FOX_SKILL_DIR` (default `~/.claude/skills/mr-fox`), `FOX_SKILL_REPO` (default `https://github.com/iabheejit/fox-os`). If the skill isn't on the machine (cloud session, new laptop), `fox-boot.sh` shallow-clones it from `FOX_SKILL_REPO` first.
+Requires `jq` or `python3`. Environment switches: `FOX_AUTO_UPDATE=0` (no clone or pull), `FOX_UPDATE_HOURS` (default 720 = 30 days; `0` = check now), `FOX_SKILL_DIR` (default `~/.claude/skills/mr-fox`), `FOX_SKILL_REPO` (default `https://github.com/iabheejit/fox-os`). If the skill isn't on the machine (cloud session, new laptop), `fox-boot.sh` shallow-clones it from `FOX_SKILL_REPO` first.
 
 **.claude/settings.json** (if it exists, merge these entries — don't overwrite):
 ```json

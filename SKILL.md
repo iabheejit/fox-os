@@ -28,7 +28,7 @@ Eight specialists: Vikram (Plan Review), Priya (Security), Kavitha (PM), Rajan (
 ## Session Boot
 
 Automatic. The `fox-boot.sh` SessionStart hook runs on startup, resume, clear and after every compact, and injects a `## Mr Fox boot (auto)` block. It:
-- installs the skill from GitHub if it's missing (cloud sessions), pulls updates (fast-forward only, once per 24h; `/mr-fox-update` forces it) and syncs hook scripts into the project
+- installs the skill from GitHub if it's missing (cloud sessions), pulls updates (fast-forward only, once per 30 days; `/mr-fox-update` forces it) and syncs hook scripts into the project
 - flags version drift with an **ACTION** line: carry it out without asking (re-sync agents/commands/settings from `references/infrastructure-setup.md`, never touch state files, write `.claude/.fox-version`)
 - gives the brief: current milestone, last session, mode, orchestra, last auto-sync snapshot, unread inbox
 

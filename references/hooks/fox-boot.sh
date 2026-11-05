@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Mr Fox — SessionStart hook: auto-boot + auto-sync. Stdout is added to Claude's context.
-#  1. Pulls skill updates (fast-forward only, at most once per FOX_UPDATE_HOURS, default 24)
+#  1. Pulls skill updates (fast-forward only, at most once per FOX_UPDATE_HOURS, default 720 = 30 days)
 #  2. Syncs hook scripts from the skill into this project (.claude/hooks/)
 #  3. Flags when the project's commands/agents are older than the skill version
 #  4. Prints a boot brief (milestone, last session, inbox) so Mr Fox needs no extra reads
@@ -9,7 +9,7 @@
 set -u
 SKILL="${FOX_SKILL_DIR:-$HOME/.claude/skills/mr-fox}"
 PROJ="${CLAUDE_PROJECT_DIR:-$PWD}"
-HOURS="${FOX_UPDATE_HOURS:-24}"
+HOURS="${FOX_UPDATE_HOURS:-720}"   # 30 days; 0 = now; FOX_AUTO_UPDATE=0 = manual only
 REPO="${FOX_SKILL_REPO:-https://github.com/iabheejit/fox-os}"
 input=$(cat)
 ver() { sed -n 's/.*\*\*Version\*\*: *\([0-9.]*\).*/\1/p' "$1" 2>/dev/null | head -1; }
