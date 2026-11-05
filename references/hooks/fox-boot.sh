@@ -10,20 +10,32 @@ set -u
 SKILL="${FOX_SKILL_DIR:-$HOME/.claude/skills/mr-fox}"
 PROJ="${CLAUDE_PROJECT_DIR:-$PWD}"
 HOURS="${FOX_UPDATE_HOURS:-24}"
+REPO="${FOX_SKILL_REPO:-https://github.com/iabheejit/fox-os}"
 input=$(cat)
 ver() { sed -n 's/.*\*\*Version\*\*: *\([0-9.]*\).*/\1/p' "$1" 2>/dev/null | head -1; }
 
 echo "## Mr Fox boot (auto)"
 
-# 1. Self-update the skill (throttled, offline-safe, never blocks > 10s)
+if command -v timeout >/dev/null 2>&1; then T="timeout 20"; else T=""; fi
+
+# 0. No skill on this machine (cloud session, new laptop): install it from GitHub
+if [ ! -d "$SKILL" ] && [ "${FOX_AUTO_UPDATE:-1}" = "1" ]; then
+  mkdir -p "$(dirname "$SKILL")"
+  if $T git clone -q --depth 1 "$REPO" "$SKILL" >/dev/null 2>&1; then
+    touch "$SKILL/.git/fox-last-pull"; echo "- Skill installed from $REPO."
+  else echo "- Skill not installed and $REPO unreachable — running on project files only."; fi
+fi
+
+# 1. Self-update the skill (throttled; FOX_UPDATE_HOURS=0 forces it; offline-safe)
 if [ -d "$SKILL/.git" ] && [ "${FOX_AUTO_UPDATE:-1}" = "1" ]; then
   stamp="$SKILL/.git/fox-last-pull"
-  if [ -z "$(find "$stamp" -mmin -$((HOURS*60)) 2>/dev/null)" ]; then
+  if [ "$HOURS" = "0" ] || [ -z "$(find "$stamp" -mmin -$((HOURS*60)) 2>/dev/null)" ]; then
     before=$(git -C "$SKILL" rev-parse HEAD 2>/dev/null)
-    if command -v timeout >/dev/null 2>&1; then T="timeout 10"; else T=""; fi
-    $T git -C "$SKILL" pull --ff-only -q >/dev/null 2>&1 && touch "$stamp"
+    if $T git -C "$SKILL" pull --ff-only -q >/dev/null 2>&1; then touch "$stamp"
+    else [ "$HOURS" = "0" ] && echo "- Skill update failed (offline, or local changes in $SKILL block a fast-forward)."; fi
     after=$(git -C "$SKILL" rev-parse HEAD 2>/dev/null)
-    [ "$before" != "$after" ] && echo "- Skill updated: $(git -C "$SKILL" log --oneline "$before..$after" | wc -l | tr -d ' ') new commit(s)."
+    if [ "$before" != "$after" ]; then echo "- Skill updated: $(git -C "$SKILL" log --oneline "$before..$after" | wc -l | tr -d ' ') new commit(s), now v$(ver "$SKILL/SKILL.md")."
+    elif [ "$HOURS" = "0" ]; then echo "- Skill already up to date (v$(ver "$SKILL/SKILL.md"))."; fi
   fi
 fi
 

@@ -39,6 +39,7 @@ Create this structure on first session in any project:
     │   ├── mr-fox-inbox.md
     │   ├── mr-fox-orchestrate.md
     │   ├── mr-fox-board.md
+    │   ├── mr-fox-update.md
     │   ├── mr-fox-plan.md
     │   ├── mr-fox-plan-review.md
     │   ├── mr-fox-audit.md
@@ -68,7 +69,7 @@ At every session start:
 3. Brief: current milestone, status, blockers, what to run at
 
 Eight specialists in `.claude/agents/`. Active team profile in `.claude/team.md` — only invoke listed agents.
-Slash commands: /mr-fox-boot /mr-fox-status /mr-fox-mode /mr-fox-voice /mr-fox-inbox /mr-fox-orchestrate /mr-fox-board /mr-fox-plan /mr-fox-plan-review /mr-fox-audit /mr-fox-apply-fixes /mr-fox-milestone-complete /mr-fox-log
+Slash commands: /mr-fox-boot /mr-fox-status /mr-fox-mode /mr-fox-voice /mr-fox-inbox /mr-fox-orchestrate /mr-fox-board /mr-fox-update /mr-fox-plan /mr-fox-plan-review /mr-fox-audit /mr-fox-apply-fixes /mr-fox-milestone-complete /mr-fox-log
 
 ## Token Rules — Always Active
 Is this in a skill or memory?   → Trust it. Skip the file read.
@@ -504,6 +505,15 @@ Run /mr-fox-orchestrate status first if orchestra.md may be stale.
 No local browser (cloud session): run `render`, then send the HTML file to Abheejit to open.
 ```
 
+**mr-fox-update.md**:
+```markdown
+Update Mr Fox from GitHub now (instead of waiting for the next session start / 24h check).
+1. Run `echo '{}' | FOX_UPDATE_HOURS=0 .claude/hooks/fox-boot.sh` (installs the skill if missing, pulls, syncs hook scripts)
+2. Carry out any ACTION line it prints (re-sync agents/commands/settings, write .claude/.fox-version)
+3. Report in one line: "Mr Fox v{old} → v{new}: {what changed}" or "Already on v{version}."
+Other open sessions pick the update up at their next start, /clear or compact.
+```
+
 **mr-fox-plan.md**:
 ```markdown
 Start a new milestone:
@@ -591,7 +601,7 @@ chmod +x .claude/hooks/*.sh
 | `block-main.sh` | PreToolUse (Bash) | Blocks git writes on `main`/`master` and pushes that target them (exit 2) |
 | `fox-board.sh` | none (on demand) | Renders the orchestra Kanban. Not a hook, never runs on its own |
 
-Requires `jq` or `python3`. Environment switches: `FOX_AUTO_UPDATE=0` (no skill pull), `FOX_UPDATE_HOURS` (default 24), `FOX_SKILL_DIR` (default `~/.claude/skills/mr-fox`).
+Requires `jq` or `python3`. Environment switches: `FOX_AUTO_UPDATE=0` (no clone or pull), `FOX_UPDATE_HOURS` (default 24; `0` = check now), `FOX_SKILL_DIR` (default `~/.claude/skills/mr-fox`), `FOX_SKILL_REPO` (default `https://github.com/iabheejit/fox-os`). If the skill isn't on the machine (cloud session, new laptop), `fox-boot.sh` shallow-clones it from `FOX_SKILL_REPO` first.
 
 **.claude/settings.json** (if it exists, merge these entries — don't overwrite):
 ```json
