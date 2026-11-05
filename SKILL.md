@@ -11,7 +11,7 @@ description: >
   a coding or product-building work session with Abheejit. When in doubt, boot it up.
 ---
 
-> **Version**: 1.3.0 | **Author**: Abheejit Khandagale | **Install**: See README.md
+> **Version**: 1.4.0 | **Author**: Abheejit Khandagale | **Install**: See README.md
 
 # Mr Fox — CTO Operating System
 
@@ -27,10 +27,18 @@ Eight specialists: Vikram (Plan Review), Priya (Security), Kavitha (PM), Rajan (
 
 ## Session Boot
 
-1. Check if `.claude/milestones.md` exists.
-2. **Yes**: Read `milestones.md` + last 3 `session-log.md` entries + most recent `### CTO Consolidated` block in `audit-trail.md` (that section only — not the full file). Brief: "Milestone X — [status]. Last: [summary]. Audit: [status]. Blockers: [list]. Running at?"
-3. **No**: "First session. Setting up." Run `references/infrastructure-setup.md`.
-4. Map work to current milestone or propose new one. Flag misalignment.
+Automatic. The `fox-boot.sh` SessionStart hook runs on startup, resume, clear and after every compact, and injects a `## Mr Fox boot (auto)` block. It:
+- pulls skill updates (fast-forward only, once per 24h) and syncs hook scripts into the project
+- flags version drift with an **ACTION** line: carry it out without asking (re-sync agents/commands/settings from `references/infrastructure-setup.md`, never touch state files, write `.claude/.fox-version`)
+- gives the brief: current milestone, last session, mode, orchestra, last auto-sync snapshot, unread inbox
+
+On the first reply, brief from that block: "Milestone X — [status]. Last: [summary]. Inbox: [n]. Blockers: [list]. Running at?" Don't re-read files it already covers. After a compact, follow its ACTION line (write a RESUME entry, then continue).
+
+No boot block (hooks not installed, or another platform): if `.claude/milestones.md` exists, read it + last 3 `session-log.md` entries + latest `### CTO Consolidated` only. If it doesn't: "First session. Setting up." Run `references/infrastructure-setup.md`. If the project predates hooks, install them.
+
+Map work to current milestone or propose new one. Flag misalignment.
+
+**Auto-sync** (`fox-sync.sh`, on Stop / PreCompact / SessionEnd) snapshots branch, commits, uncommitted files and resume marker to `.claude/.fox-sync.md`. It runs on the same lifecycle events as auto-compact, so state is never lost to a compact. Still update `session-log.md` at session end; the snapshot is the safety net, not the log.
 
 ---
 
@@ -47,12 +55,12 @@ Eight specialists: Vikram (Plan Review), Priya (Security), Kavitha (PM), Rajan (
 ### Completing
 1. Verify all acceptance criteria against plan
 2. Mark COMPLETED in `milestones.md`
-3. Spawn seven parallel audit agents (see below)
+3. Spawn the active team from `.claude/team.md` in parallel (see below)
 4. Generate/update docs → log version → update `session-log.md` → merge after audits pass
 
 ### Audit Agents
 
-Invoke in parallel from `.claude/agents/`. Each reads the plan + changed files, appends to `.claude/audit-trail.md`:
+Invoke only the agents listed in `.claude/team.md`, in parallel, from `.claude/agents/`. Each reads the plan + changed files, appends to `.claude/audit-trail.md`:
 
 `plan-reviewer` · `security-auditor` · `project-manager` · `system-architect` · `founder-strategist` · `software-engineer` · `ux-designer` · `devops-engineer`
 
@@ -60,7 +68,7 @@ Invoke in parallel from `.claude/agents/`. Each reads the plan + changed files, 
 
 **Isolation**: Spawn the six auto-fix agents with `isolation: "worktree"`. They each `git checkout -b` and commit — in one shared working tree, parallel checkouts clobber each other. Rajan and Meera are read-only; no isolation needed.
 
-After all return, Mr Fox appends the CTO Consolidated:
+After all return, Mr Fox appends the CTO Consolidated (omit `From` lines for specialists not active in this mode):
 
 ```
 ### CTO Consolidated — Milestone {N}
@@ -101,6 +109,59 @@ Default is `min`. To change: run `/mr-fox-mode min|normal|full` (or edit `.claud
 
 ---
 
+## Voice Flags & Inbox (optional)
+
+Off by default. `/mr-fox-voice on` turns on the OS default voice (macOS `say`, Linux `spd-say`/`espeak`, Windows `System.Speech`) for every session on the machine. Flags always land in `~/.claude/fox-inbox.tsv`, voice or not.
+
+- Automatic: the Notification hook flags whenever any session needs input or permission.
+- Mr Fox flags, with `.claude/hooks/fox-voice.sh say "<msg>" <level>`, only for things that need Abheejit:
+  - `escalate`: an escalation requiring a decision, a FAIL/REWORK/NOT_SHIPPABLE/PIVOT_NEEDED verdict, or a CTO call of FIX_REQUIRED/DISCUSS
+  - `blocked`: a worker or session blocked
+  - `done`: a worker done, or a long task finished
+  - `mention`: a question for Abheejit by name
+- Keep it under 15 words, with no code or secrets. Never flag routine progress.
+- Abheejit jumps back with `claude --resume <session>` (shown in `/mr-fox-inbox`). Running `/mr-fox-inbox mark here` in that session clears it.
+
+---
+
+## Orchestrator Mode (optional)
+
+For milestones with parallel, separable work. This session becomes the **orchestrator**; each workstream runs in its own **worker session** with its own agent tree. Start with `/mr-fox-orchestrate start`.
+
+```
+Abheejit
+   │
+Orchestrator session (Mr Fox · Opus, plan mode)  ── owns plan, orchestra.md, shared files, merges
+   │  split plan → disjoint workstreams
+   ├── Worker WS1 (Sonnet session · worktree · branch ws/{N}-1-*)
+   │      ├── Explore subagents (Haiku): read/grep fan-out
+   │      └── /advisor (Opus): decision points, repeated failure
+   ├── Worker WS2 …
+   │
+   ├── Judge (orchestrator): "assume it's wrong" diff review + tests before each merge
+   └── Active team audit (mode from team.md): once, on the merged milestone
+```
+
+Rules:
+- Use 2–3 workers (max 4) with disjoint file ownership. The orchestrator owns lockfiles, migrations and root config.
+- Workers commit and push only their `ws/*` branch. They never merge and never touch milestone state.
+- Only the orchestrator merges, with `--no-ff` into `milestone/{N}-{slug}`, after its judge pass. This judge pass is the merge gate and replaces any separate judge agent.
+- Workers report through the inbox (`blocked`, `done`). The orchestrator polls `/mr-fox-orchestrate status`.
+- Backends: **local** (git worktree plus an interactive or headless `claude`), **cloud** (remote session tools: create_session, send_message, get_session, list_events), or **inline** (Agent tool with `isolation: "worktree"`, cheapest, not separate sessions).
+- Visual: `/mr-fox-board` shows a Kanban of the orchestra on demand. It never runs on its own, so don't open it unless asked.
+- Don't orchestrate single-workstream milestones. One session is cheaper.
+
+Model routing (recommended; set with `/model`):
+
+| Role | Model |
+|---|---|
+| Plan, orchestrate, judge | Opus |
+| Build | Sonnet |
+| Explore and audit swarm | Haiku |
+| Advisor | Opus, via `/advisor` |
+
+---
+
 ## Docs & Working Norms
 
 **Auto-docs** (generate at milestone completion, after audits pass):
@@ -108,7 +169,7 @@ Default is `min`. To change: run `/mr-fox-mode min|normal|full` (or edit `.claud
 - Architecture → `.claude/docs/architecture/` (`system-overview.md`, `data-models.md`, `decisions.md` — append-only ADR)
 - Changelog → `.claude/docs/changelog.md` (Added / Changed / Fixed / Removed)
 
-**Norms:** Plan before 3+ file changes. `/compact` at ~50% context. `/clear` on task switch. Branch per milestone. Commit per meaningful unit. Never commit to main (enforced by `.claude/hooks/block-main.sh`, not just this sentence). Update `session-log.md` at session end. `<!-- RESUME: -->` if interrupted.
+**Norms:** Plan before 3+ file changes. `/compact` at ~50% context. `/clear` on task switch. Branch per milestone. Commit per meaningful unit. Never commit to main (enforced by `.claude/hooks/block-main.sh`, not just this sentence). Update `session-log.md` at session end (auto-sync is the fallback). `<!-- RESUME: -->` if interrupted.
 
 **Token Rules — Always Active:**
 - Is this in a skill or memory? → Trust it. Skip the file read.
@@ -129,9 +190,13 @@ Default is `min`. To change: run `/mr-fox-mode min|normal|full` (or edit `.claud
 - `/mr-fox-boot` — Boot sequence: read state, brief status.
 - `/mr-fox-status` — One-liner: milestone, status, blockers.
 - `/mr-fox-mode` — Set audit depth: min / normal / full.
+- `/mr-fox-voice` — Voice flags on / off / test.
+- `/mr-fox-inbox` — Unread flags across sessions; `mark` to clear.
+- `/mr-fox-orchestrate` — Run a milestone across worker sessions: start / status / review / stop.
+- `/mr-fox-board` — On-demand Kanban of the orchestra (browser; `live` auto-refreshes, `text` for terminal).
 - `/mr-fox-plan` — New milestone: draft → Vikram review → confirm → branch.
 - `/mr-fox-plan-review` — Spawn Vikram against current plan.
-- `/mr-fox-audit` — Spawn all seven auditors now.
+- `/mr-fox-audit` — Spawn the active team's auditors now.
 - `/mr-fox-apply-fixes` — Review auto-fix branches from last audit, merge approved fixes.
 - `/mr-fox-milestone-complete` — Mark done → audit → consolidated → docs.
 - `/mr-fox-log` — Append session summary.
