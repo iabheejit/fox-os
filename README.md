@@ -119,6 +119,7 @@ Orchestrator (Mr Fox · Opus · plan mode) — owns plan, orchestra.md, shared f
   - cloud: Claude Code remote sessions
   - inline: worktree subagents, the cheapest option
 - **Reporting:** workers report through the inbox (`blocked`, `done`); with voice on, you hear it. State lives in `.claude/orchestra.md`.
+- **Board:** `/mr-fox-board` opens a Kanban of the orchestra in your browser, with columns QUEUED → RUNNING → BLOCKED → REVIEW → MERGED → DROPPED. Each card shows the goal, owned files, branch, commits ahead, last commit, session and latest flag. It's on demand only: `/mr-fox-board live` auto-refreshes every 10s, `/mr-fox-board stop` ends that, and `/mr-fox-board text` prints it in the terminal.
 - **When not to use it:** a single-workstream milestone. One session is cheaper.
 
 ---
@@ -138,7 +139,7 @@ Orchestrator (Mr Fox · Opus · plan mode) — owns plan, orchestra.md, shared f
 
 **4. Build.** Either:
 - *Single session (default)*: just work with Mr Fox.
-- *Orchestrated*: `/mr-fox-orchestrate start` → approve the workstream split → open the worker tabs it gives you (or let it run them headless or in the cloud) → `/mr-fox-orchestrate status` to check in → `/mr-fox-orchestrate review ws1` to judge and merge each one.
+- *Orchestrated*: `/mr-fox-orchestrate start` → approve the workstream split → open the worker tabs it gives you (or let it run them headless or in the cloud) → `/mr-fox-orchestrate status` or `/mr-fox-board` to see how things are moving → `/mr-fox-orchestrate review ws1` to judge and merge each one.
 
 **5. Stay in the loop without watching.** `/mr-fox-voice on`, then switch away. When you hear *"Mr Fox. my-app. WS2 blocked: …"*, run `/mr-fox-inbox`, resume that session, unblock it, and `/mr-fox-inbox mark here`.
 
@@ -255,7 +256,7 @@ Mr Fox creates the full project structure:
     ├── session-log.md
     ├── team.md                  # Audit mode: min | normal | full | profile
     ├── settings.json            # Hook registration
-    ├── hooks/                   # fox-boot, fox-sync, fox-voice, block-main (auto-synced)
+    ├── hooks/                   # fox-boot, fox-sync, fox-voice, block-main, fox-board (auto-synced)
     ├── agents/                  # 8 specialists as native Claude Code subagents
     │   ├── plan-reviewer.md     # Vikram
     │   ├── security-auditor.md  # Priya
@@ -284,6 +285,7 @@ After setup, the project is self-contained. Mr Fox works on any platform — eve
 | `/mr-fox-voice` | Voice flags: `on`, `off`, `test`, `status`. Off by default. |
 | `/mr-fox-inbox` | Unread flags from every session. `mark here` / `mark <id>` / `mark all` to clear. |
 | `/mr-fox-orchestrate` | Run a milestone across worker sessions: `start`, `status`, `review <ws>`, `stop <ws>`. |
+| `/mr-fox-board` | On-demand Kanban of the orchestra: browser (`live` auto-refreshes), or `text` in the terminal. |
 | `/mr-fox-plan` | Start a new milestone: draft plan → Vikram reviews → confirm → branch. |
 | `/mr-fox-plan-review` | Spawn Vikram against the current milestone plan. |
 | `/mr-fox-audit` | Spawn the active team's auditors. Auto-fix specialists fix on branches; all append to audit-trail. |
@@ -327,7 +329,8 @@ fox-os/
     │   ├── fox-boot.sh         #   SessionStart: auto-boot, auto-update, drift sync
     │   ├── fox-sync.sh         #   Stop / PreCompact / SessionEnd: state snapshot
     │   ├── fox-voice.sh        #   Voice flags + cross-session inbox
-    │   └── block-main.sh       #   PreToolUse: never commit to main
+    │   ├── block-main.sh       #   PreToolUse: never commit to main
+    │   └── fox-board.sh        #   On-demand orchestra Kanban (not a hook)
     └── personas/               # Long-form specialist backstories (reference only, not executed)
         ├── plan-reviewer.md
         ├── security-auditor.md

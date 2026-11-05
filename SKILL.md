@@ -148,6 +148,7 @@ Rules:
 - Only the orchestrator merges, with `--no-ff` into `milestone/{N}-{slug}`, after its judge pass. This judge pass is the merge gate and replaces any separate judge agent.
 - Workers report through the inbox (`blocked`, `done`). The orchestrator polls `/mr-fox-orchestrate status`.
 - Backends: **local** (git worktree plus an interactive or headless `claude`), **cloud** (remote session tools: create_session, send_message, get_session, list_events), or **inline** (Agent tool with `isolation: "worktree"`, cheapest, not separate sessions).
+- Visual: `/mr-fox-board` shows a Kanban of the orchestra on demand. It never runs on its own, so don't open it unless asked.
 - Don't orchestrate single-workstream milestones. One session is cheaper.
 
 Model routing (recommended; set with `/model`):
@@ -192,6 +193,7 @@ Model routing (recommended; set with `/model`):
 - `/mr-fox-voice` — Voice flags on / off / test.
 - `/mr-fox-inbox` — Unread flags across sessions; `mark` to clear.
 - `/mr-fox-orchestrate` — Run a milestone across worker sessions: start / status / review / stop.
+- `/mr-fox-board` — On-demand Kanban of the orchestra (browser; `live` auto-refreshes, `text` for terminal).
 - `/mr-fox-plan` — New milestone: draft → Vikram review → confirm → branch.
 - `/mr-fox-plan-review` — Spawn Vikram against current plan.
 - `/mr-fox-audit` — Spawn the active team's auditors now.

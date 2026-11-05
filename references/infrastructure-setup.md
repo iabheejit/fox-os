@@ -20,7 +20,8 @@ Create this structure on first session in any project:
     │   ├── fox-boot.sh         # SessionStart: auto-boot brief + auto-update + drift sync
     │   ├── fox-sync.sh         # Stop / PreCompact / SessionEnd: state snapshot
     │   ├── fox-voice.sh        # Notification + manual flags: voice + cross-session inbox
-    │   └── block-main.sh       # PreToolUse: enforces "never commit to main"
+    │   ├── block-main.sh       # PreToolUse: enforces "never commit to main"
+    │   └── fox-board.sh        # On demand only: orchestra Kanban (/mr-fox-board)
     ├── agents/                 # Specialist subagents (Claude Code native format)
     │   ├── plan-reviewer.md    # Vikram — pre-coding plan gate
     │   ├── security-auditor.md # Priya — security & supply chain
@@ -37,6 +38,7 @@ Create this structure on first session in any project:
     │   ├── mr-fox-voice.md
     │   ├── mr-fox-inbox.md
     │   ├── mr-fox-orchestrate.md
+    │   ├── mr-fox-board.md
     │   ├── mr-fox-plan.md
     │   ├── mr-fox-plan-review.md
     │   ├── mr-fox-audit.md
@@ -66,7 +68,7 @@ At every session start:
 3. Brief: current milestone, status, blockers, what to run at
 
 Eight specialists in `.claude/agents/`. Active team profile in `.claude/team.md` — only invoke listed agents.
-Slash commands: /mr-fox-boot /mr-fox-status /mr-fox-mode /mr-fox-voice /mr-fox-inbox /mr-fox-orchestrate /mr-fox-plan /mr-fox-plan-review /mr-fox-audit /mr-fox-apply-fixes /mr-fox-milestone-complete /mr-fox-log
+Slash commands: /mr-fox-boot /mr-fox-status /mr-fox-mode /mr-fox-voice /mr-fox-inbox /mr-fox-orchestrate /mr-fox-board /mr-fox-plan /mr-fox-plan-review /mr-fox-audit /mr-fox-apply-fixes /mr-fox-milestone-complete /mr-fox-log
 
 ## Token Rules — Always Active
 Is this in a skill or memory?   → Trust it. Skip the file read.
@@ -489,6 +491,19 @@ stop <ws>: mark DROPPED, stop the worker (cloud: interrupt_session; headless: ki
 When every row is MERGED: run /mr-fox-milestone-complete (audits run once, on the merged result, at the current mode).
 ```
 
+**mr-fox-board.md**:
+```markdown
+On-demand Kanban of the orchestra. Argument: (none) | live | stop | text
+- none: `.claude/hooks/fox-board.sh open` — render .claude/fox-board.html and open it in the browser
+- live: `.claude/hooks/fox-board.sh watch` — re-render every 10s in the background; the page auto-refreshes
+- stop: `.claude/hooks/fox-board.sh stop`
+- text: `.claude/hooks/fox-board.sh text` — print the board in the terminal
+Columns: QUEUED · RUNNING · BLOCKED · REVIEW · MERGED · DROPPED (from .claude/orchestra.md).
+Cards show goal, owned files, branch, commits ahead of the milestone branch, last commit, session, latest inbox flag.
+Run /mr-fox-orchestrate status first if orchestra.md may be stale.
+No local browser (cloud session): run `render`, then send the HTML file to Abheejit to open.
+```
+
 **mr-fox-plan.md**:
 ```markdown
 Start a new milestone:
@@ -560,7 +575,7 @@ Append a session summary to .claude/session-log.md in this format:
 
 ## .claude/hooks/ — Hooks (auto-boot, auto-sync, guardrails, voice)
 
-Instructions in CLAUDE.md are context; hooks are run by the harness on every matching event. Copy all four scripts from the skill and make them executable:
+Instructions in CLAUDE.md are context; hooks are run by the harness on every matching event. Copy the scripts from the skill and make them executable:
 
 ```bash
 mkdir -p .claude/hooks
@@ -574,6 +589,7 @@ chmod +x .claude/hooks/*.sh
 | `fox-sync.sh` | Stop, PreCompact, SessionEnd | Writes `.claude/.fox-sync.md`: branch, last commits, uncommitted files, resume marker. Runs automatically, like auto-compact |
 | `fox-voice.sh` | Notification (+ called by Mr Fox) | Logs to `~/.claude/fox-inbox.tsv`; speaks with the OS default voice when voice is on |
 | `block-main.sh` | PreToolUse (Bash) | Blocks git writes on `main`/`master` and pushes that target them (exit 2) |
+| `fox-board.sh` | none (on demand) | Renders the orchestra Kanban. Not a hook, never runs on its own |
 
 Requires `jq` or `python3`. Environment switches: `FOX_AUTO_UPDATE=0` (no skill pull), `FOX_UPDATE_HOURS` (default 24), `FOX_SKILL_DIR` (default `~/.claude/skills/mr-fox`).
 
@@ -609,6 +625,8 @@ Requires `jq` or `python3`. Environment switches: `FOX_AUTO_UPDATE=0` (no skill 
 .claude/.fox-session
 .claude/.fox-sync.md
 .claude/orchestra/*.out.json
+.claude/fox-board.html
+.claude/.fox-board.pid
 ```
 
 Finally write the skill's version (from the `**Version**:` line in SKILL.md) to `.claude/.fox-version`.
