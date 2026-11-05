@@ -1,8 +1,10 @@
 # Mr Fox OS
 
-**A CTO operating system for founders who are building alone.**
+**A CTO operating system for founders who build alone, and the small teams they grow into.**
 
-Mr Fox is a persistent engineering leadership layer that runs inside Claude Code. It gives you session continuity, milestone governance, and a team of eight senior specialists who review — and fix — your work before you ship. Covering security, architecture, product, strategy, engineering craft, UX, DevOps, and plan quality.
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
+Mr Fox is an open-source, persistent engineering leadership layer that runs inside Claude Code. It gives you session continuity, milestone governance, and a team of eight senior specialists who review — and fix — your work before you ship. Covering security, architecture, product, strategy, engineering craft, UX, DevOps, and plan quality.
 
 You get the institutional memory, discipline, and review depth of a senior engineering team. Without the headcount.
 
@@ -86,6 +88,24 @@ Opt out of auto-update with `FOX_AUTO_UPDATE=0`. Run `/mr-fox-update` to pull im
 
 ---
 
+## Team Mode (optional)
+
+Mr Fox is solo-first. When someone joins, run `/mr-fox-team on`. It asks for the product owner, members, sprint length, and where reports go (a file, a Slack channel or a Notion page). Then:
+
+| | Solo (default) | Team mode |
+|---|---|---|
+| Planning unit | Milestone | Milestone = sprint (goal, dates, ordered backlog in the plan) |
+| Deterministic checks | CI gate if the project has CI | Installs a starter CI workflow (tests, types, lint, dependency audit, secret scan) and gates on it |
+| Release path | Sanjay flags gaps | Sanjay checks CI, preview/staging, one-step rollback, flags for risky changes |
+| Reporting | CTO Consolidated to you | Plus `.claude/reports/sprint-{N}.md` for the product owner, sent where you chose |
+| Other AI tools | — | `AGENTS.md` so teammates on other tools follow the same rules |
+
+The inbox and voice flags stay personal to each machine. `/mr-fox-team off` switches team mode back off and keeps CI and reports in place.
+
+The split is on purpose: **CI runs the deterministic checks, and the specialists give judgment.** The auto-fix reviewers run on a small, fast model, so they don't replace tests, type checks or scans.
+
+---
+
 ## Voice Flags & Inbox (optional)
 
 Running several sessions? Mr Fox can tell you, out loud, when one needs you.
@@ -126,7 +146,7 @@ Orchestrator (Mr Fox · Opus · plan mode) — owns plan, orchestra.md, shared f
 
 ## How to Use
 
-**1. Install once** (see Installation below), then open any project and say *"Mr Fox, set up this project."* Hooks, agents, commands and state files are created. From then on every session boots itself.
+**1. Install once** (see Installation below), then open any project and say *"Mr Fox, set up this project."* On the very first run Mr Fox picks up your name from `~/.claude/CLAUDE.md`, or asks once and offers to save it there. Hooks, agents, commands and state files are created. From then on every session boots itself.
 
 **2. Plan a milestone.** Run `/mr-fox-plan`. Describe what you're building; Vikram reviews the plan; you confirm; Mr Fox branches `milestone/{N}-{slug}`.
 
@@ -143,13 +163,15 @@ Orchestrator (Mr Fox · Opus · plan mode) — owns plan, orchestra.md, shared f
 
 **5. Stay in the loop without watching.** `/mr-fox-voice on`, then switch away. When you hear *"Mr Fox. my-app. WS2 blocked: …"*, run `/mr-fox-inbox`, resume that session, unblock it, and `/mr-fox-inbox mark here`.
 
-**6. Finish.** Run `/mr-fox-milestone-complete`. The active team audits, then you get the CTO Consolidated. Run `/mr-fox-apply-fixes` to review the auto-fix branches, then merge via PR.
+**6. Finish.** Run `/mr-fox-milestone-complete`. If the project has CI, it must be green first. The active team audits, then you get the CTO Consolidated. Run `/mr-fox-apply-fixes` to review the auto-fix branches, then merge via PR.
 
 **7. Walk away.** Auto-sync has your state. Next session, the brief picks up where you left off, even after a compact.
 
+**Working with others?** Run `/mr-fox-team on` (see Team Mode).
+
 ---
 
-## Milestone Lifecycle## Milestone Lifecycle
+## Milestone Lifecycle
 
 ```
 Draft Plan → Vikram Reviews Plan → Confirm → Branch → Build
@@ -206,7 +228,7 @@ Auto-Fixed:
 Escalations Requiring Decision:
 - Rajan: API versioning strategy — /v1/ prefix now or later? Decide before Milestone 4.
 
-Mr Fox's Note to Abheejit: Run /mr-fox-apply-fixes to merge the three auto-fix branches.
+Mr Fox's Note to Maya: Run /mr-fox-apply-fixes to merge the three auto-fix branches.
 One architectural decision to make (Rajan's note above) — five minutes of thought now
 saves a painful migration later. Everything else is green.
 ```
@@ -304,6 +326,7 @@ After setup, the project is self-contained. Mr Fox works on any platform — eve
 | `/mr-fox-orchestrate` | Run a milestone across worker sessions: `start`, `status`, `review <ws>`, `stop <ws>`. |
 | `/mr-fox-board` | On-demand Kanban of the orchestra: browser (`live` auto-refreshes), or `text` in the terminal. |
 | `/mr-fox-update` | Pull the latest Mr Fox from GitHub now and re-sync this project's hooks, agents and commands. |
+| `/mr-fox-team` | Team mode `on` / `off` / `status`: sprints, CI gate, sprint reports for the product owner, `AGENTS.md`. |
 | `/mr-fox-plan` | Start a new milestone: draft plan → Vikram reviews → confirm → branch. |
 | `/mr-fox-plan-review` | Spawn Vikram against the current milestone plan. |
 | `/mr-fox-audit` | Spawn the active team's auditors. Auto-fix specialists fix on branches; all append to audit-trail. |
@@ -337,12 +360,15 @@ Or just talk naturally. Mr Fox activates on: *"what's our status"*, *"run the au
 
 ```
 fox-os/
+├── LICENSE                     # MIT
 ├── SKILL.md                    # Skill entrypoint — Mr Fox's core identity and lifecycle
 ├── CLAUDE.md                   # Cross-platform bootstrap via @SKILL.md import
 └── references/
     ├── infrastructure-setup.md # First-run setup — the single source for every agent,
     │                           #   command and state-file template installed into a project
-    ├── plan-template.md        # Milestone plan template
+    ├── plan-template.md        # Milestone plan template (Sprint section for team mode)
+    ├── ci/
+    │   └── ci.yml              # Starter GitHub Actions workflow installed by team mode
     ├── hooks/                  # Hook scripts copied into each project (auto-synced on boot)
     │   ├── fox-boot.sh         #   SessionStart: auto-boot, auto-update, drift sync
     │   ├── fox-sync.sh         #   Stop / PreCompact / SessionEnd: state snapshot
@@ -375,4 +401,15 @@ The agents that actually run live in each project's `.claude/agents/`, written b
 
 ---
 
-> Built by Abheejit Khandagale. Mr Fox OS v1.4.0.
+## Contributing
+
+Mr Fox is open source under the [MIT License](LICENSE). Issues and pull requests are welcome.
+
+- **Where things live:** agent definitions, commands and templates are in `references/infrastructure-setup.md` (the single source of truth). Hook scripts are in `references/hooks/`.
+- **Keep it a template:** no personal names or project specifics in runtime files. The owner comes from `team.md`.
+- **Test hook changes:** pipe sample JSON into the script, for example `echo '{"source":"startup"}' | CLAUDE_PROJECT_DIR=/tmp/demo references/hooks/fox-boot.sh`. Make sure `bash -n references/hooks/*.sh` passes.
+- **Releases:** bump `**Version**:` in `SKILL.md`. Installed projects re-sync themselves when it changes.
+
+---
+
+> Created by Abheejit Khandagale. Mr Fox OS v1.5.0.

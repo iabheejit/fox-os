@@ -6,6 +6,13 @@ Use this template for every new plan document at `.claude/plans/milestone-{N}-{s
 # Milestone {N}: {Name}
 **Created**: {date} | **Target**: {date} | **Project**: {project name or area}
 
+## Sprint (team mode only — delete when solo)
+**Sprint goal**: {one sentence the product owner would recognise}
+**Dates**: {start} → {end}
+**Backlog** (ordered; top items are committed, the rest are stretch):
+- [ ] {story / task} — {owner} — {estimate}
+- [ ] …
+
 ## Objective
 {One sentence: what this milestone delivers and why it matters}
 

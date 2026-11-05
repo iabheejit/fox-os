@@ -52,7 +52,7 @@ sv=$(ver "$SKILL/SKILL.md"); pv=$(cat "$PROJ/.claude/.fox-version" 2>/dev/null)
 if [ ! -f "$PROJ/.claude/milestones.md" ]; then
   echo "- Project not set up. ACTION: run first-time setup from references/infrastructure-setup.md."
 elif [ -n "$sv" ] && [ "$sv" != "$pv" ]; then
-  echo "- Project is on Mr Fox v${pv:-unknown}, skill is v$sv. ACTION (do it now, no prompt needed): re-sync .claude/agents/, .claude/commands/, .claude/settings.json hooks and team.md comment block from references/infrastructure-setup.md. Never touch milestones, plans, audit-trail, session-log, versions or the Active Agents list. Then write '$sv' to .claude/.fox-version and report what changed in one line."
+  echo "- Project is on Mr Fox v${pv:-unknown}, skill is v$sv. ACTION (do it now, no prompt needed): re-sync .claude/agents/, .claude/commands/, .claude/settings.json hooks and team.md comment block from references/infrastructure-setup.md. Never touch milestones, plans, audit-trail, session-log, versions, reports, or team.md's Owner / Active Agents / Team values (add missing keys like '## Team Mode: off' only). Then write '$sv' to .claude/.fox-version and report what changed in one line."
 fi
 
 # 4. Boot brief
@@ -62,7 +62,8 @@ if [ -f "$PROJ/.claude/milestones.md" ]; then
   last=$(grep -m1 '^## ' "$PROJ/.claude/session-log.md" 2>/dev/null)
   echo "- Last session: ${last#\#\# }"
   mode=$(sed -n 's/^## Current Profile: *//p' "$PROJ/.claude/team.md" 2>/dev/null)
-  echo "- Mode: ${mode:-unknown}"
+  team=$(sed -n 's/^## Team Mode: *//p' "$PROJ/.claude/team.md" 2>/dev/null)
+  echo "- Mode: ${mode:-unknown} · Team mode: ${team:-off}"
   [ -f "$PROJ/.claude/orchestra.md" ] && echo "- Orchestra: $(grep -cE '\| *(RUNNING|BLOCKED|REVIEW) *\|' "$PROJ/.claude/orchestra.md") active workstream(s) — see .claude/orchestra.md"
 fi
 
@@ -80,5 +81,13 @@ fi
 if [ -x "$PROJ/.claude/hooks/fox-voice.sh" ]; then
   printf '%s' "$input" | "$PROJ/.claude/hooks/fox-voice.sh" session | sed 's/^/- /'
 fi
-echo "Brief Abheejit from this block on the first reply; read the latest CTO Consolidated only if asked or if the milestone status needs it."
+# 7. Owner — who Mr Fox works for (no hardcoded names: this is a template)
+owner=$(sed -n 's/^## Owner: *//p' "$PROJ/.claude/team.md" 2>/dev/null | head -1)
+case "$owner" in ""|"{name}"|"{owner}")
+  owner=""
+  if [ -f "$PROJ/.claude/team.md" ]; then
+    echo "- Owner unknown. ACTION: look for the user's name in ~/.claude/CLAUDE.md (and any user context you were given). Found → confirm it in one line. Not found → ask once \"What should I call you?\" and offer to add \"My name is <name>.\" to ~/.claude/CLAUDE.md so every project picks it up. Then write '## Owner: <name>' to .claude/team.md."
+  fi ;;
+esac
+echo "Brief ${owner:-the owner} from this block on the first reply; read the latest CTO Consolidated only if asked or if the milestone status needs it."
 exit 0
