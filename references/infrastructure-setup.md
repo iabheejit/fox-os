@@ -11,9 +11,16 @@ Create this structure on first session in any project:
     ├── versions.md             # Automatic version history
     ├── session-log.md          # Per-session work summaries
     ├── team.md                 # Active mode/profile (min | normal | full | ...)
-    ├── settings.json           # PreToolUse hook registration (blocks commits to main)
-    ├── hooks/
-    │   └── block-main.sh       # Enforces "never commit to main" — not just a prompt
+    ├── orchestra.md            # Orchestrator registry (created by /mr-fox-orchestrate)
+    ├── settings.json           # Hook registration (see Hooks section)
+    ├── .fox-version            # Mr Fox version this project was synced to
+    ├── .fox-session            # local: this dir's session id (gitignored)
+    ├── .fox-sync.md            # local: last auto-sync snapshot (gitignored)
+    ├── hooks/                  # Copied from the skill's references/hooks/ — auto-synced
+    │   ├── fox-boot.sh         # SessionStart: auto-boot brief + auto-update + drift sync
+    │   ├── fox-sync.sh         # Stop / PreCompact / SessionEnd: state snapshot
+    │   ├── fox-voice.sh        # Notification + manual flags: voice + cross-session inbox
+    │   └── block-main.sh       # PreToolUse: enforces "never commit to main"
     ├── agents/                 # Specialist subagents (Claude Code native format)
     │   ├── plan-reviewer.md    # Vikram — pre-coding plan gate
     │   ├── security-auditor.md # Priya — security & supply chain
@@ -27,6 +34,9 @@ Create this structure on first session in any project:
     │   ├── mr-fox-boot.md
     │   ├── mr-fox-status.md
     │   ├── mr-fox-mode.md
+    │   ├── mr-fox-voice.md
+    │   ├── mr-fox-inbox.md
+    │   ├── mr-fox-orchestrate.md
     │   ├── mr-fox-plan.md
     │   ├── mr-fox-plan-review.md
     │   ├── mr-fox-audit.md
@@ -51,12 +61,12 @@ Create this structure on first session in any project:
 **Engineering OS**: Mr Fox CTO is active on this project.
 
 At every session start:
-1. Read `.claude/milestones.md` and last 3 entries in `.claude/session-log.md`
-2. Find and read only the most recent `### CTO Consolidated` section in `.claude/audit-trail.md`
+1. If a `## Mr Fox boot (auto)` block is in context (SessionStart hook), brief from it and carry out any ACTION lines — no extra reads
+2. Otherwise read `.claude/milestones.md`, last 3 entries in `.claude/session-log.md`, and only the most recent `### CTO Consolidated` in `.claude/audit-trail.md`
 3. Brief: current milestone, status, blockers, what to run at
 
 Eight specialists in `.claude/agents/`. Active team profile in `.claude/team.md` — only invoke listed agents.
-Slash commands: /mr-fox-boot /mr-fox-status /mr-fox-mode /mr-fox-plan /mr-fox-plan-review /mr-fox-audit /mr-fox-apply-fixes /mr-fox-milestone-complete /mr-fox-log
+Slash commands: /mr-fox-boot /mr-fox-status /mr-fox-mode /mr-fox-voice /mr-fox-inbox /mr-fox-orchestrate /mr-fox-plan /mr-fox-plan-review /mr-fox-audit /mr-fox-apply-fixes /mr-fox-milestone-complete /mr-fox-log
 
 ## Token Rules — Always Active
 Is this in a skill or memory?   → Trust it. Skip the file read.
@@ -406,11 +416,10 @@ Append ONLY this to .claude/audit-trail.md:
 
 **mr-fox-boot.md**:
 ```markdown
-Run the Mr Fox boot sequence:
-1. Read .claude/milestones.md — find current milestone and status
-2. Read last 3 entries in .claude/session-log.md
-3. Find and read only the most recent ### CTO Consolidated section in .claude/audit-trail.md
-4. Brief: "Milestone {N} — {status}. Last session: {summary}. Latest audit: {status}. Blockers: {list or none}. Running at?"
+Boot sequence (the SessionStart hook normally does this automatically — use this to re-brief mid-session):
+1. Run .claude/hooks/fox-boot.sh with `echo '{}' |` piped in, if it exists; otherwise read .claude/milestones.md, the last 3 entries in .claude/session-log.md, and only the most recent ### CTO Consolidated section in .claude/audit-trail.md
+2. Carry out any ACTION lines it prints
+3. Brief: "Milestone {N} — {status}. Last session: {summary}. Latest audit: {status}. Inbox: {n unread}. Blockers: {list or none}. Running at?"
 ```
 
 **mr-fox-status.md**:
@@ -427,6 +436,57 @@ Set the audit depth. Argument: min | normal | full (no argument: show current mo
 2. Rewrite `## Active Agents` to match the mode table in the comment block (min: plan-reviewer, security-auditor, software-engineer · normal: + project-manager, system-architect · full: all 8)
 3. Confirm in one line: "Mode: {mode} — {agent names}. Est. cost: {3|5|8} agents per audit."
 Vikram (plan-reviewer) is always active in every mode.
+```
+
+**mr-fox-voice.md**:
+```markdown
+Voice flags. Argument: on | off | test | status (default status).
+Run `.claude/hooks/fox-voice.sh {argument}` and report the result in one line.
+Voice is global (all sessions on this machine) and off by default. When on, Mr Fox speaks
+important flags with the OS default voice. Flags are always written to the inbox either way.
+```
+
+**mr-fox-inbox.md**:
+```markdown
+Cross-session inbox. Argument: (none) | all | here | mark <id> | mark here | mark all
+- none: `.claude/hooks/fox-voice.sh list` — unread flags from every session
+- all:  `.claude/hooks/fox-voice.sh list --all` — include seen
+- here: `.claude/hooks/fox-voice.sh list --here` — only this project directory
+- mark: `.claude/hooks/fox-voice.sh mark <id|--here|--all>`
+Show each flag as: id · time · level · project @ branch · session · message.
+For a flag from another session, say how to jump back: `cd {project} && claude --resume {session}`
+(cloud sessions: open it from claude.ai/code). In that session, `/mr-fox-inbox mark here` clears it.
+```
+
+**mr-fox-orchestrate.md**:
+```markdown
+Run the current milestone as an orchestra: this session orchestrates, worker sessions build.
+Argument: start | status | review <ws> | stop <ws>  (default status). Follow SKILL.md → Orchestrator Mode.
+
+start:
+1. Read the IN_PROGRESS milestone plan. Split it into 2-3 workstreams (max 4) with DISJOINT file ownership.
+   Shared files (lockfiles, migrations, root config) stay with the orchestrator.
+2. Write .claude/orchestra.md from the template. Show it; wait for Abheejit's go.
+3. For each workstream: create branch ws/{N}-{k}-{slug} off milestone/{N}-{slug}, write its brief to
+   .claude/orchestra/ws-{k}.md from the worker brief template, and launch with the chosen backend:
+   - local:  git worktree add ../{repo}-ws{k} ws/{N}-{k}-{slug}   (ORCH = absolute path of this repo)
+             interactive (recommended — you can step in): Abheejit opens a new tab and runs
+             `cd ../{repo}-ws{k} && claude --model sonnet "$(cat $ORCH/.claude/orchestra/ws-{k}.md)"`
+             headless (well-specified work only — it can't ask questions):
+             `(cd ../{repo}-ws{k} && claude -p "$(cat $ORCH/.claude/orchestra/ws-{k}.md)" --model sonnet --permission-mode acceptEdits --output-format json) > $ORCH/.claude/orchestra/ws-{k}.out.json 2>&1 &`
+   - cloud:  remote session tools — create_session (source repo, outcome_branch ws/{N}-{k}-{slug}, prompt = brief);
+             monitor with get_session / list_events; steer with send_message
+   - inline: Agent tool with isolation: "worktree" (subagents, not sessions — cheapest)
+4. Record each session id and backend in .claude/orchestra.md (status RUNNING).
+
+status: refresh each row from the inbox (`fox-voice.sh list`), `git log ws/...`, and session state. Flag BLOCKED rows.
+
+review <ws>: judge pass — diff milestone/{N}-{slug}...ws/{N}-{k}-{slug}, assume it is wrong, one line per finding,
+run tests. Pass → merge --no-ff into the milestone branch, mark MERGED, remove the worktree. Fail → send findings back to the worker.
+
+stop <ws>: mark DROPPED, stop the worker (cloud: interrupt_session; headless: kill the job; interactive: ask Abheejit), keep the branch.
+
+When every row is MERGED: run /mr-fox-milestone-complete (audits run once, on the merged result, at the current mode).
 ```
 
 **mr-fox-plan.md**:
@@ -498,55 +558,62 @@ Append a session summary to .claude/session-log.md in this format:
 
 ---
 
-## .claude/hooks/block-main.sh — Enforce "Never Commit to Main"
+## .claude/hooks/ — Hooks (auto-boot, auto-sync, guardrails, voice)
 
-CLAUDE.md is context, not enforcement. This hook is enforced by the harness: it runs before every Bash call and blocks git writes on `main`/`master`, or pushes that target them. Requires `jq`. Make it executable (`chmod +x .claude/hooks/block-main.sh`).
+Instructions in CLAUDE.md are context; hooks are run by the harness on every matching event. Copy all four scripts from the skill and make them executable:
 
 ```bash
-#!/usr/bin/env bash
-# PreToolUse hook (Bash): block git commit/push/merge/rebase/reset on main or master.
-# Exit 2 = block and show stderr to Claude. Enforced by the harness, not by prompt.
-input=$(cat)
-cmd=$(printf '%s' "$input" | jq -r '.tool_input.command // empty')
-[ -z "$cmd" ] && exit 0
-
-# Only inspect git write operations
-printf '%s' "$cmd" | grep -Eq '(^|[;&|[:space:]])git[[:space:]]+([^;&|]*[[:space:]])?(commit|push|merge|rebase|reset|cherry-pick|am)\b' || exit 0
-
-branch=$(git rev-parse --abbrev-ref HEAD 2>/dev/null)
-protected='^(main|master)$'
-
-# 1. Writing while checked out on a protected branch
-if [[ "$branch" =~ $protected ]]; then
-  echo "BLOCKED: on '$branch'. Mr Fox never commits to main. Create milestone/{N}-{slug} first." >&2
-  exit 2
-fi
-
-# 2. Pushing to a protected branch from elsewhere (git push origin main, HEAD:main, --force to main)
-if printf '%s' "$cmd" | grep -Eq 'git[[:space:]]+push\b.*([[:space:]:]|/)(main|master)([[:space:]]|$)'; then
-  echo "BLOCKED: push targets main/master. Push your milestone branch and merge via PR." >&2
-  exit 2
-fi
-exit 0
+mkdir -p .claude/hooks
+cp ~/.claude/skills/mr-fox/references/hooks/*.sh .claude/hooks/
+chmod +x .claude/hooks/*.sh
 ```
 
-**.claude/settings.json**:
+| Script | Event | What it does |
+|---|---|---|
+| `fox-boot.sh` | SessionStart (startup, resume, clear, compact) | Pulls skill updates (ff-only, once/24h), syncs these scripts, flags version drift with an ACTION line, prints the boot brief + last auto-sync snapshot, records the session id |
+| `fox-sync.sh` | Stop, PreCompact, SessionEnd | Writes `.claude/.fox-sync.md`: branch, last commits, uncommitted files, resume marker. Runs automatically, like auto-compact |
+| `fox-voice.sh` | Notification (+ called by Mr Fox) | Logs to `~/.claude/fox-inbox.tsv`; speaks with the OS default voice when voice is on |
+| `block-main.sh` | PreToolUse (Bash) | Blocks git writes on `main`/`master` and pushes that target them (exit 2) |
+
+Requires `jq` or `python3`. Environment switches: `FOX_AUTO_UPDATE=0` (no skill pull), `FOX_UPDATE_HOURS` (default 24), `FOX_SKILL_DIR` (default `~/.claude/skills/mr-fox`).
+
+**.claude/settings.json** (if it exists, merge these entries — don't overwrite):
 ```json
 {
   "hooks": {
+    "SessionStart": [
+      { "hooks": [ { "type": "command", "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/fox-boot.sh" } ] }
+    ],
+    "Stop": [
+      { "hooks": [ { "type": "command", "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/fox-sync.sh" } ] }
+    ],
+    "PreCompact": [
+      { "hooks": [ { "type": "command", "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/fox-sync.sh" } ] }
+    ],
+    "SessionEnd": [
+      { "hooks": [ { "type": "command", "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/fox-sync.sh" } ] }
+    ],
+    "Notification": [
+      { "hooks": [ { "type": "command", "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/fox-voice.sh hook" } ] }
+    ],
     "PreToolUse": [
-      {
-        "matcher": "Bash",
-        "hooks": [
-          { "type": "command", "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/block-main.sh" }
-        ]
-      }
+      { "matcher": "Bash",
+        "hooks": [ { "type": "command", "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/block-main.sh" } ] }
     ]
   }
 }
 ```
 
-If `.claude/settings.json` already exists, merge the `PreToolUse` entry — don't overwrite.
+**.gitignore** — append:
+```
+.claude/.fox-session
+.claude/.fox-sync.md
+.claude/orchestra/*.out.json
+```
+
+Finally write the skill's version (from the `**Version**:` line in SKILL.md) to `.claude/.fox-version`.
+
+Limits: `block-main.sh` checks the branch of the project directory, so `cd elsewhere && git commit` or `git -C other` is not caught. A SessionStart hook can't make Claude speak first: the brief arrives with your first message.
 
 ---
 
@@ -578,6 +645,33 @@ If `.claude/settings.json` already exists, merge the `PreToolUse` entry — don'
 <!-- Strategy, Engineering, Design, and DevOps audits (after coding) + CTO Consolidated -->
 <!-- Six agents (all except Rajan and Meera) can auto-fix on audit/fix-{name}-m{N} branches -->
 <!-- CTO Consolidated includes: Auto-Fixed (branch list) + Escalations Requiring Decision -->
+```
+
+**orchestra.md** (created by /mr-fox-orchestrate):
+```markdown
+# Orchestra — Milestone {N}
+| WS | Goal | Owns (files/dirs) | Branch | Backend | Session | Status | Last check |
+|----|------|-------------------|--------|---------|---------|--------|------------|
+<!-- Status: QUEUED | RUNNING | BLOCKED | REVIEW | MERGED | DROPPED -->
+<!-- Orchestrator owns shared files: lockfiles, migrations, root config -->
+```
+
+**orchestra/ws-{k}.md** (worker brief):
+```markdown
+You are a Mr Fox WORKER for workstream WS{k} of Milestone {N}. The orchestrator session owns the milestone.
+Ignore the boot brief's milestone actions — do not plan, audit, change team.md, or touch milestones/session-log.
+
+Goal: {one paragraph}
+Acceptance criteria (yours only): {subset from the plan}
+You own: {files/dirs}. Do not edit anything else — flag the orchestrator if you must.
+Branch: ws/{N}-{k}-{slug}. Commit there; push only this branch. Never merge.
+
+Work like this: Explore subagents (haiku) for read/grep fan-out; you write code and run tests;
+/advisor at a decision point or when the same error fails twice.
+
+Flag the orchestrator (and Abheejit) with `.claude/hooks/fox-voice.sh say "<msg>" <level>`:
+- blocked → level `blocked`, then stop and wait
+- done (tests green, committed, pushed) → level `done`, with a 3-line summary
 ```
 
 **session-log.md**:
