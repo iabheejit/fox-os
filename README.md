@@ -77,12 +77,12 @@ You don't run anything. Four hooks are installed into every project on first run
 
 | Hook | Fires on | Does |
 |---|---|---|
-| `fox-boot.sh` | Session start, resume, `/clear`, after compact | Briefs Mr Fox (milestone, last session, mode, orchestra, inbox). Pulls skill updates (once/24h, fast-forward only) and syncs hook scripts. If the skill is newer than the project, Mr Fox re-syncs agents and commands on his own. |
+| `fox-boot.sh` | Session start, resume, `/clear`, after compact | Briefs Mr Fox (milestone, last session, mode, orchestra, inbox). Pulls skill updates (once/30 days, fast-forward only) and syncs hook scripts. If the skill is newer than the project, Mr Fox re-syncs agents and commands on his own. |
 | `fox-sync.sh` | End of every turn, before compact, session end | Snapshots branch, commits, uncommitted files and resume marker to `.claude/.fox-sync.md`. It runs on the same lifecycle events as auto-compact, so a compact never loses where you were. |
 | `fox-voice.sh` | Any session needs input or permission | Logs to the cross-session inbox; speaks it if voice is on. |
 | `block-main.sh` | Every Bash call | Blocks commits and pushes to `main`/`master`. |
 
-Opt out of auto-update with `FOX_AUTO_UPDATE=0`. The brief arrives with your first message; a hook can't make Claude speak first.
+Opt out of auto-update with `FOX_AUTO_UPDATE=0`. Run `/mr-fox-update` to pull immediately. The brief arrives with your first message; a hook can't make Claude speak first.
 
 ---
 
@@ -240,6 +240,23 @@ git clone https://github.com/iabheejit/fox-os ~/.claude/skills/mr-fox
 
 Works across Claude Code CLI, VS Code (Claude Code extension), and Cursor. The skill directory is shared across all platforms.
 
+### Staying Up to Date
+
+Sessions update themselves from GitHub:
+
+- **Every session start** (at most once per 30 days), `fox-boot.sh` runs `git pull --ff-only` on `~/.claude/skills/mr-fox`. It then syncs the hook scripts into the project. If the project is behind, Mr Fox re-syncs agents and commands himself.
+- **Cloud sessions or a new machine** with no skill installed: `fox-boot.sh` clones it from GitHub first. Commit `.claude/hooks/` and `.claude/settings.json` in your project so cloud sessions have the hook.
+- **Right now:** `/mr-fox-update`. Other open sessions pick it up at their next start, `/clear` or compact.
+- **Pinning or forks:** set `FOX_SKILL_REPO` to your fork, or `FOX_AUTO_UPDATE=0` for manual-only (`/mr-fox-update`).
+
+**Upgrading from v1.3 or earlier** (one time; older installs have no hooks to update themselves):
+
+```bash
+git -C ~/.claude/skills/mr-fox pull
+```
+
+Then in each project, say *"Mr Fox, upgrade this project"*. He installs the hooks, settings and new commands, and leaves your milestones, plans and logs alone. After that, updates are automatic.
+
 ### First Session in a New Project
 
 Say "Mr Fox, set up this project" (or run `/mr-fox`). The `/mr-fox-*` slash commands don't exist yet on a fresh project — the boot creates them.
@@ -286,6 +303,7 @@ After setup, the project is self-contained. Mr Fox works on any platform — eve
 | `/mr-fox-inbox` | Unread flags from every session. `mark here` / `mark <id>` / `mark all` to clear. |
 | `/mr-fox-orchestrate` | Run a milestone across worker sessions: `start`, `status`, `review <ws>`, `stop <ws>`. |
 | `/mr-fox-board` | On-demand Kanban of the orchestra: browser (`live` auto-refreshes), or `text` in the terminal. |
+| `/mr-fox-update` | Pull the latest Mr Fox from GitHub now and re-sync this project's hooks, agents and commands. |
 | `/mr-fox-plan` | Start a new milestone: draft plan → Vikram reviews → confirm → branch. |
 | `/mr-fox-plan-review` | Spawn Vikram against the current milestone plan. |
 | `/mr-fox-audit` | Spawn the active team's auditors. Auto-fix specialists fix on branches; all append to audit-trail. |

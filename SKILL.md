@@ -28,7 +28,7 @@ Eight specialists: Vikram (Plan Review), Priya (Security), Kavitha (PM), Rajan (
 ## Session Boot
 
 Automatic. The `fox-boot.sh` SessionStart hook runs on startup, resume, clear and after every compact, and injects a `## Mr Fox boot (auto)` block. It:
-- pulls skill updates (fast-forward only, once per 24h) and syncs hook scripts into the project
+- installs the skill from GitHub if it's missing (cloud sessions), pulls updates (fast-forward only, once per 30 days; `/mr-fox-update` forces it) and syncs hook scripts into the project
 - flags version drift with an **ACTION** line: carry it out without asking (re-sync agents/commands/settings from `references/infrastructure-setup.md`, never touch state files, write `.claude/.fox-version`)
 - gives the brief: current milestone, last session, mode, orchestra, last auto-sync snapshot, unread inbox
 
@@ -194,6 +194,7 @@ Model routing (recommended; set with `/model`):
 - `/mr-fox-inbox` — Unread flags across sessions; `mark` to clear.
 - `/mr-fox-orchestrate` — Run a milestone across worker sessions: start / status / review / stop.
 - `/mr-fox-board` — On-demand Kanban of the orchestra (browser; `live` auto-refreshes, `text` for terminal).
+- `/mr-fox-update` — Pull the latest Mr Fox from GitHub now and re-sync this project.
 - `/mr-fox-plan` — New milestone: draft → Vikram review → confirm → branch.
 - `/mr-fox-plan-review` — Spawn Vikram against current plan.
 - `/mr-fox-audit` — Spawn the active team's auditors now.
