@@ -106,6 +106,27 @@ The split is on purpose: **CI runs the deterministic checks, and the specialists
 
 ---
 
+## Cut Your Usage (optional, one command)
+
+Most Claude Code spend goes on three things: subagents running on your main model, MCP tool lists loaded on every request, and long sessions that reload a huge context on every message. `scripts/fox-optimize.sh` fixes all three on your machine:
+
+```bash
+~/.claude/skills/mr-fox/scripts/fox-optimize.sh --name "Your Name"          # dry run: shows what it would change
+~/.claude/skills/mr-fox/scripts/fox-optimize.sh --name "Your Name" --apply  # do it (backups: *.bak-fox)
+```
+
+| | What it changes (in `~/.claude/`) |
+|---|---|
+| **1. Cheaper subagents** | `CLAUDE_CODE_SUBAGENT_MODEL=sonnet` (or `--model haiku`). Installs Haiku agents `scout`, `summarizer` and `log-reader`. Adds routing rules and your name to `CLAUDE.md`. |
+| **2. Fewer MCP servers** | Disables the plugins you list (`--disable-plugins "a,b"`; the default list is the knowledge-work plugin bundles). Lists every CLI-added MCP server with its `claude mcp remove` command. claude.ai connectors are turned off in claude.ai settings. |
+| **3. Fresh context** | A context guard hook nudges `/clear` (new task) or `/compact` (same task) when a session passes ~800 KB, 8 hours, or a week. Installs `/mr-fox-refresh` globally. |
+
+**Long-lived orchestrators:** run `/mr-fox-refresh` weekly or after each milestone. It writes a handoff, either a `session-log.md` RESUME entry in Mr Fox projects or `HANDOFF.md` elsewhere. Then run `/clear`. You keep the same window, with a fresh context, and the boot brief picks the work back up.
+
+Tune it with `FOX_GUARD_KB` and `FOX_GUARD_HOURS`. `--no-guard` skips the hook.
+
+---
+
 ## Voice Flags & Inbox (optional)
 
 Running several sessions? Mr Fox can tell you, out loud, when one needs you.
@@ -326,6 +347,7 @@ After setup, the project is self-contained. Mr Fox works on any platform — eve
 | `/mr-fox-orchestrate` | Run a milestone across worker sessions: `start`, `status`, `review <ws>`, `stop <ws>`. |
 | `/mr-fox-board` | On-demand Kanban of the orchestra: browser (`live` auto-refreshes), or `text` in the terminal. |
 | `/mr-fox-update` | Pull the latest Mr Fox from GitHub now and re-sync this project's hooks, agents and commands. |
+| `/mr-fox-refresh` | Handoff for long-running sessions: writes state + RESUME marker, then you `/clear`. Installed globally by `scripts/fox-optimize.sh`. |
 | `/mr-fox-team` | Team mode `on` / `off` / `status`: sprints, CI gate, sprint reports for the product owner, `AGENTS.md`. |
 | `/mr-fox-plan` | Start a new milestone: draft plan → Vikram reviews → confirm → branch. |
 | `/mr-fox-plan-review` | Spawn Vikram against the current milestone plan. |
@@ -361,12 +383,17 @@ Or just talk naturally. Mr Fox activates on: *"what's our status"*, *"run the au
 ```
 fox-os/
 ├── LICENSE                     # MIT
+├── scripts/
+│   ├── fox-optimize.sh         # One-time local usage optimizer (subagents, MCP, context guard)
+│   └── fox-guard.sh            # Context guard hook (global UserPromptSubmit)
 ├── SKILL.md                    # Skill entrypoint — Mr Fox's core identity and lifecycle
 ├── CLAUDE.md                   # Cross-platform bootstrap via @SKILL.md import
 └── references/
     ├── infrastructure-setup.md # First-run setup — the single source for every agent,
     │                           #   command and state-file template installed into a project
     ├── plan-template.md        # Milestone plan template (Sprint section for team mode)
+    ├── agents/                 # scout / summarizer / log-reader (Haiku), installed by fox-optimize
+    ├── commands/               # Global commands installed by fox-optimize (/mr-fox-refresh)
     ├── ci/
     │   └── ci.yml              # Starter GitHub Actions workflow installed by team mode
     ├── hooks/                  # Hook scripts copied into each project (auto-synced on boot)

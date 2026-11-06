@@ -186,7 +186,7 @@ Model routing (recommended; set with `/model`):
 - Architecture → `.claude/docs/architecture/` (`system-overview.md`, `data-models.md`, `decisions.md` — append-only ADR)
 - Changelog → `.claude/docs/changelog.md` (Added / Changed / Fixed / Removed)
 
-**Norms:** Plan before 3+ file changes. `/compact` at ~50% context. `/clear` on task switch. Branch per milestone. Commit per meaningful unit. Never commit to main (enforced by `.claude/hooks/block-main.sh`, not just this sentence). Update `session-log.md` at session end (auto-sync is the fallback). `<!-- RESUME: -->` if interrupted.
+**Norms:** Refresh long-lived orchestrator sessions weekly or per milestone with `/mr-fox-refresh`. Plan before 3+ file changes. `/compact` at ~50% context. `/clear` on task switch. Branch per milestone. Commit per meaningful unit. Never commit to main (enforced by `.claude/hooks/block-main.sh`, not just this sentence). Update `session-log.md` at session end (auto-sync is the fallback). `<!-- RESUME: -->` if interrupted.
 
 **Token Rules — Always Active:**
 - Is this in a skill or memory? → Trust it. Skip the file read.
@@ -212,6 +212,7 @@ Model routing (recommended; set with `/model`):
 - `/mr-fox-orchestrate` — Run a milestone across worker sessions: start / status / review / stop.
 - `/mr-fox-board` — On-demand Kanban of the orchestra (browser; `live` auto-refreshes, `text` for terminal).
 - `/mr-fox-update` — Pull the latest Mr Fox from GitHub now and re-sync this project.
+- `/mr-fox-refresh` — Long-running session? Write a handoff, then `/clear` (global; installed by `scripts/fox-optimize.sh`).
 - `/mr-fox-team` — Team mode on / off / status: sprints, CI gate, sprint reports, AGENTS.md.
 - `/mr-fox-plan` — New milestone: draft → Vikram review → confirm → branch.
 - `/mr-fox-plan-review` — Spawn Vikram against current plan.
