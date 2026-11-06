@@ -1,0 +1,91 @@
+# Mr Fox — starter CI (installed by team mode as .github/workflows/ci.yml).
+# Deterministic checks live here; Mr Fox's auditors handle judgment.
+# Each step runs only if the project has that tooling, so it works on a fresh repo.
+# Tighten it as the project grows: pin versions, add your deploy/preview job.
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches: [main, master, "milestone/**"]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # ---------- JavaScript / TypeScript ----------
+      - name: Set up Node
+        if: hashFiles('package.json') != ''
+        uses: actions/setup-node@v4
+        with:
+          node-version: "lts/*"
+      - name: Install (npm)
+        if: hashFiles('package-lock.json') != ''
+        run: npm ci
+      - name: Install (pnpm / yarn / no lockfile)
+        if: hashFiles('package.json') != '' && hashFiles('package-lock.json') == ''
+        run: |
+          if [ -f pnpm-lock.yaml ]; then corepack enable && pnpm install --frozen-lockfile
+          elif [ -f yarn.lock ]; then corepack enable && yarn install --immutable
+          else npm install; fi
+      - name: Lint
+        if: hashFiles('package.json') != ''
+        run: npm run lint --if-present
+      - name: Type check
+        if: hashFiles('package.json') != ''
+        run: npm run typecheck --if-present
+      - name: Test
+        if: hashFiles('package.json') != ''
+        run: npm test --if-present
+      - name: Build
+        if: hashFiles('package.json') != ''
+        run: npm run build --if-present
+      - name: Dependency audit (high+)
+        if: hashFiles('package-lock.json') != ''
+        run: npm audit --audit-level=high --omit=dev
+
+      # ---------- Python ----------
+      - name: Set up Python
+        if: hashFiles('pyproject.toml', 'requirements.txt') != ''
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+      - name: Install (Python)
+        if: hashFiles('pyproject.toml', 'requirements.txt') != ''
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+          if [ -f pyproject.toml ]; then pip install -e . 2>/dev/null || pip install .; fi
+          pip install pytest ruff pip-audit
+      - name: Lint (ruff)
+        if: hashFiles('pyproject.toml', 'requirements.txt') != ''
+        run: ruff check .
+      - name: Test (pytest)
+        if: hashFiles('pyproject.toml', 'requirements.txt') != ''
+        run: |
+          pytest -q || code=$?
+          # exit 5 = no tests collected: don't fail a repo that has none yet
+          if [ "${code:-0}" -ne 0 ] && [ "${code:-0}" -ne 5 ]; then exit "$code"; fi
+      - name: Dependency audit (Python)
+        if: hashFiles('requirements.txt') != ''
+        run: pip-audit -r requirements.txt
+
+      # ---------- Everyone ----------
+      # Free for personal repos; organisation repos need a free GITLEAKS_LICENSE secret
+      # (gitleaks.io), or swap in another scanner.
+      - name: Secret scan
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

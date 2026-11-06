@@ -1,6 +1,8 @@
 # First-Run Infrastructure Setup
 
-Create this structure on first session in any project:
+Create this structure on first session in any project.
+
+**First, the owner.** Mr Fox works for one named person; no name is hardcoded. Look for the user's name in `~/.claude/CLAUDE.md` (and any user context you were given). If it's there, confirm it in one line. If not, ask once: "What should I call you?" Then offer to add `My name is <name>.` to `~/.claude/CLAUDE.md`, so every future project picks it up without asking. Write it as `## Owner:` in `.claude/team.md`. Everywhere below, "the owner" and `{Owner}` mean this person.
 
 ```
 [project root]/
@@ -10,7 +12,8 @@ Create this structure on first session in any project:
     ├── audit-trail.md          # All audit reports — plan reviews + post-milestone
     ├── versions.md             # Automatic version history
     ├── session-log.md          # Per-session work summaries
-    ├── team.md                 # Active mode/profile (min | normal | full | ...)
+    ├── team.md                 # Owner, audit mode, team mode settings
+    ├── reports/                # Team mode only: sprint-{N}.md reports for the product owner
     ├── orchestra.md            # Orchestrator registry (created by /mr-fox-orchestrate)
     ├── settings.json           # Hook registration (see Hooks section)
     ├── .fox-version            # Mr Fox version this project was synced to
@@ -40,6 +43,7 @@ Create this structure on first session in any project:
     │   ├── mr-fox-orchestrate.md
     │   ├── mr-fox-board.md
     │   ├── mr-fox-update.md
+    │   ├── mr-fox-team.md
     │   ├── mr-fox-plan.md
     │   ├── mr-fox-plan-review.md
     │   ├── mr-fox-audit.md
@@ -69,7 +73,7 @@ At every session start:
 3. Brief: current milestone, status, blockers, what to run at
 
 Eight specialists in `.claude/agents/`. Active team profile in `.claude/team.md` — only invoke listed agents.
-Slash commands: /mr-fox-boot /mr-fox-status /mr-fox-mode /mr-fox-voice /mr-fox-inbox /mr-fox-orchestrate /mr-fox-board /mr-fox-update /mr-fox-plan /mr-fox-plan-review /mr-fox-audit /mr-fox-apply-fixes /mr-fox-milestone-complete /mr-fox-log
+Slash commands: /mr-fox-boot /mr-fox-status /mr-fox-mode /mr-fox-voice /mr-fox-inbox /mr-fox-orchestrate /mr-fox-board /mr-fox-update /mr-fox-team /mr-fox-plan /mr-fox-plan-review /mr-fox-audit /mr-fox-apply-fixes /mr-fox-milestone-complete /mr-fox-log
 
 ## Token Rules — Always Active
 Is this in a skill or memory?   → Trust it. Skip the file read.
@@ -86,7 +90,9 @@ About to restate what user said → Delete it.
 ```markdown
 # Active Team Profile
 
+## Owner: {name}
 ## Current Profile: min
+## Team Mode: off
 
 <!-- Modes (depth dial — change with /mr-fox-mode min|normal|full):
   min       — Vikram, Priya, Arjun (3: plan gate, security, code). Cheapest. Hotfixes, spikes, tiny milestones.
@@ -106,6 +112,13 @@ Specialty profiles (same file, same mechanism):
 - security-auditor   # Priya
 - software-engineer  # Arjun
 <!-- normal adds: project-manager, system-architect · full adds: + founder-strategist, ux-designer, devops-engineer -->
+
+## Team
+<!-- Used only when Team Mode is on (/mr-fox-team on). -->
+- Product owner: {name}
+- Members: {names}
+- Sprint length: 2 weeks
+- Report to: file   <!-- file | slack:#channel | notion:<page url> -->
 ```
 
 ---
@@ -148,7 +161,7 @@ Append ONLY this to .claude/audit-trail.md:
 **Milestone Sizing**: {appropriate / oversized — suggest split}
 **Fundability Framing**: {clear asset / generic / missing}
 **Auto-Fixed**: {plan doc edits applied — list of rewrites, or "None"}
-**Escalated**: {REWORK_PLAN issues requiring Abheejit's decision, or "None — clear to start coding"}
+**Escalated**: {REWORK_PLAN issues requiring the owner's decision, or "None — clear to start coding"}
 ```
 
 ---
@@ -182,7 +195,7 @@ Append ONLY this to .claude/audit-trail.md:
 **Dependency Risk**: {new packages assessed, or "No new dependencies"}
 **Data Flow Gaps**: {input→output chain gaps, or "None"}
 **Auto-Fixed**: {branch `audit/fix-priya-m{N}` — list of fixes applied, or "None"}
-**Escalated**: {FAIL issues requiring Abheejit's decision, or "None"}
+**Escalated**: {FAIL issues requiring the owner's decision, or "None"}
 ```
 
 ---
@@ -216,7 +229,7 @@ Append ONLY this to .claude/audit-trail.md:
 **Technical Debt Introduced**: {shortcuts with severity: low/med/high}
 **Demo/Report Readiness**: {could you show this to a funder today? why/why not}
 **Auto-Fixed**: {branch `audit/fix-kavitha-m{N}` — list of fixes applied, or "None"}
-**Escalated**: {BLOCKED issues requiring Abheejit's decision, or "None"}
+**Escalated**: {BLOCKED issues requiring the owner's decision, or "None"}
 **Next Session Should Start With**: {specific directive}
 ```
 
@@ -385,6 +398,8 @@ Check: deployability (can this be shipped without tribal knowledge? documented p
 
 Calibrate to stage: a side project with 10 users doesn't need PagerDuty. A payment flow with real money does. State your assumptions.
 
+**Team mode** (`## Team Mode: on` in .claude/team.md): also check the release path. Is CI green on this branch? Is there a preview or staging deploy to show the product owner? Is there a one-step rollback? Are risky changes behind a flag or kill switch? A missing rollback for a change real users will hit is NOT_SHIPPABLE.
+
 **Execute**: For OPERATIONAL_RISK issues, run `git checkout -b audit/fix-sanjay-m{N}` and apply fixes (add health check endpoint, add structured logging to critical paths, document missing env vars in .env.example, write deployment runbook to .claude/docs/runbooks/, add graceful shutdown handler). Commit with `fix(ops): {description} [Sanjay audit m{N}]`. Push branch. For NOT_SHIPPABLE, record in Escalated.
 
 Status: SHIP_READY (deployable repeatably, fails gracefully, someone other than the author can operate it), OPERATIONAL_RISK (will cause incident within 3 months — fix before next milestone), NOT_SHIPPABLE (fundamental gap — fix before merge).
@@ -406,10 +421,11 @@ Append ONLY this to .claude/audit-trail.md:
   - Downstream dependency failure: {graceful degradation / hard crash}
   - Error visibility: {meaningful errors / silent failures / stack traces only}
 **CI/CD Pipeline**: {tests run before deploy / partial / manual only}
+**Release Path** (team mode): {CI status · preview link · rollback step · flags — or "n/a (solo)"}
 **Backup & Recovery**: {documented / assumed / none}
 **Operational Debt**: {manual steps, tribal knowledge, undocumented runbooks}
 **Auto-Fixed**: {branch `audit/fix-sanjay-m{N}` — list of fixes applied, or "None"}
-**Escalated**: {NOT_SHIPPABLE issues requiring Abheejit's decision, or "None"}
+**Escalated**: {NOT_SHIPPABLE issues requiring the owner's decision, or "None"}
 **Minimum Before Production**: {what must exist before real users hit this, or "Acceptable"}
 ```
 
@@ -436,7 +452,7 @@ One-liner status check. Read .claude/milestones.md and return:
 Set the audit depth. Argument: min | normal | full (no argument: show current mode and its agents).
 
 1. Rewrite `## Current Profile:` in .claude/team.md to the chosen mode
-2. Rewrite `## Active Agents` to match the mode table in the comment block (min: plan-reviewer, security-auditor, software-engineer · normal: + project-manager, system-architect · full: all 8)
+2. Rewrite only the list under `## Active Agents` (leave Owner, Team Mode and the `## Team` block untouched) to match the mode table in the comment block (min: plan-reviewer, security-auditor, software-engineer · normal: + project-manager, system-architect · full: all 8)
 3. Confirm in one line: "Mode: {mode} — {agent names}. Est. cost: {3|5|8} agents per audit."
 Vikram (plan-reviewer) is always active in every mode.
 ```
@@ -469,11 +485,11 @@ Argument: start | status | review <ws> | stop <ws>  (default status). Follow SKI
 start:
 1. Read the IN_PROGRESS milestone plan. Split it into 2-3 workstreams (max 4) with DISJOINT file ownership.
    Shared files (lockfiles, migrations, root config) stay with the orchestrator.
-2. Write .claude/orchestra.md from the template. Show it; wait for Abheejit's go.
+2. Write .claude/orchestra.md from the template. Show it; wait for the owner's go.
 3. For each workstream: create branch ws/{N}-{k}-{slug} off milestone/{N}-{slug}, write its brief to
    .claude/orchestra/ws-{k}.md from the worker brief template, and launch with the chosen backend:
    - local:  git worktree add ../{repo}-ws{k} ws/{N}-{k}-{slug}   (ORCH = absolute path of this repo)
-             interactive (recommended — you can step in): Abheejit opens a new tab and runs
+             interactive (recommended — the owner can step in): the owner opens a new tab and runs
              `cd ../{repo}-ws{k} && claude --model sonnet "$(cat $ORCH/.claude/orchestra/ws-{k}.md)"`
              headless (well-specified work only — it can't ask questions):
              `(cd ../{repo}-ws{k} && claude -p "$(cat $ORCH/.claude/orchestra/ws-{k}.md)" --model sonnet --permission-mode acceptEdits --output-format json) > $ORCH/.claude/orchestra/ws-{k}.out.json 2>&1 &`
@@ -487,7 +503,7 @@ status: refresh each row from the inbox (`fox-voice.sh list`), `git log ws/...`,
 review <ws>: judge pass — diff milestone/{N}-{slug}...ws/{N}-{k}-{slug}, assume it is wrong, one line per finding,
 run tests. Pass → merge --no-ff into the milestone branch, mark MERGED, remove the worktree. Fail → send findings back to the worker.
 
-stop <ws>: mark DROPPED, stop the worker (cloud: interrupt_session; headless: kill the job; interactive: ask Abheejit), keep the branch.
+stop <ws>: mark DROPPED, stop the worker (cloud: interrupt_session; headless: kill the job; interactive: ask the owner), keep the branch.
 
 When every row is MERGED: run /mr-fox-milestone-complete (audits run once, on the merged result, at the current mode).
 ```
@@ -502,7 +518,7 @@ On-demand Kanban of the orchestra. Argument: (none) | live | stop | text
 Columns: QUEUED · RUNNING · BLOCKED · REVIEW · MERGED · DROPPED (from .claude/orchestra.md).
 Cards show goal, owned files, branch, commits ahead of the milestone branch, last commit, session, latest inbox flag.
 Run /mr-fox-orchestrate status first if orchestra.md may be stale.
-No local browser (cloud session): run `render`, then send the HTML file to Abheejit to open.
+No local browser (cloud session): run `render`, then send the HTML file to the owner to open.
 ```
 
 **mr-fox-update.md**:
@@ -514,10 +530,31 @@ Update Mr Fox from GitHub now (instead of waiting for the next session start / 3
 Other open sessions pick the update up at their next start, /clear or compact.
 ```
 
+**mr-fox-team.md**:
+```markdown
+Team mode — for when more than one person works on the product. Argument: on | off | status (default status).
+
+on:
+1. Ask for anything missing in the `## Team` block of .claude/team.md: product owner, members, sprint length,
+   where reports go (file | slack:#channel | notion:<page>). Set `## Team Mode: on`.
+2. If .github/workflows/ has no CI: copy references/ci/ci.yml from the skill to .github/workflows/ci.yml and tell
+   the owner what it runs. Never overwrite an existing workflow.
+3. If AGENTS.md doesn't exist, create it from the AGENTS.md template (teammates on other AI tools read it).
+4. Recommend `/mr-fox-mode normal` or higher if the mode is `min` (team work benefits from Kavitha and Rajan).
+5. Confirm in one line what changed.
+
+off: set `## Team Mode: off`. Leave CI, AGENTS.md and reports in place.
+status: one line — team mode, product owner, report destination, CI present or not.
+
+What team mode changes: plans carry a Sprint section (goal, dates, backlog) so one milestone = one sprint;
+Sanjay checks the release path (CI, preview, rollback, flags); milestone completion writes a sprint report for
+the product owner. Inbox and voice stay personal to each machine.
+```
+
 **mr-fox-plan.md**:
 ```markdown
 Start a new milestone:
-1. Ask Abheejit: what are we building and why?
+1. Ask the owner: what are we building and why?
 2. Draft a plan at .claude/plans/milestone-{N}-{slug}.md using references/plan-template.md
 3. Present the plan and ask for confirmation
 4. Once confirmed: spawn the plan-reviewer agent (Vikram)
@@ -530,7 +567,7 @@ Start a new milestone:
 Spawn the plan-reviewer agent (Vikram) against the current IN_PROGRESS milestone plan.
 Read .claude/milestones.md to find the current milestone plan path.
 Vikram reviews the plan and appends findings to .claude/audit-trail.md.
-Surface Vikram's verdict to Abheejit. If REWORK_PLAN or REFINE, list what must change before coding starts.
+Surface Vikram's verdict to the owner. If REWORK_PLAN or REFINE, list what must change before coding starts.
 ```
 
 **mr-fox-audit.md**:
@@ -560,14 +597,18 @@ Review and merge the auto-fix branches from the last audit. For each milestone {
 ```markdown
 Complete the current milestone:
 1. Verify all acceptance criteria in the plan are met — read the code and tests, not developer claims
-2. Update milestone status to COMPLETED in .claude/milestones.md
-3. Read .claude/team.md — spawn only the listed audit agents in parallel (auto-fix agents with `isolation: "worktree"`)
-4. After audits complete, write CTO Consolidated to .claude/audit-trail.md (include Auto-Fixed and Escalations Requiring Decision)
-5. If auto-fix branches exist, prompt: "Run /mr-fox-apply-fixes to review and merge them before proceeding."
-6. Generate/update docs: .claude/docs/api/, .claude/docs/architecture/, .claude/docs/changelog.md
-7. Log version bump in .claude/versions.md
-8. Append session summary to .claude/session-log.md
-9. If no escalations: confirm clear to merge. If escalations exist: list them and wait for Abheejit's decision.
+2. CI gate (any mode, if the project has CI): CI must be green on the milestone branch — check the PR's checks
+   (GitHub tools or `gh pr checks`), or run the same commands locally. Red CI = stop: report what failed. No exceptions.
+3. Update milestone status to COMPLETED in .claude/milestones.md
+4. Read .claude/team.md — spawn only the listed audit agents in parallel (auto-fix agents with `isolation: "worktree"`)
+5. After audits complete, write CTO Consolidated to .claude/audit-trail.md (include Auto-Fixed and Escalations Requiring Decision)
+6. If auto-fix branches exist, prompt: "Run /mr-fox-apply-fixes to review and merge them before proceeding."
+7. Generate/update docs: .claude/docs/api/, .claude/docs/architecture/, .claude/docs/changelog.md
+8. Log version bump in .claude/versions.md
+9. Append session summary to .claude/session-log.md
+10. Team mode only: write .claude/reports/sprint-{N}.md from the sprint report template and deliver it per
+    `Report to` in team.md (slack/notion via the connected tool if available; otherwise the file, and say so)
+11. If no escalations: confirm clear to merge. If escalations exist: list them and wait for the owner's decision.
 ```
 
 **mr-fox-log.md**:
@@ -697,9 +738,44 @@ Branch: ws/{N}-{k}-{slug}. Commit there; push only this branch. Never merge.
 Work like this: Explore subagents (haiku) for read/grep fan-out; you write code and run tests;
 /advisor at a decision point or when the same error fails twice.
 
-Flag the orchestrator (and Abheejit) with `.claude/hooks/fox-voice.sh say "<msg>" <level>`:
+Flag the orchestrator (and the owner) with `.claude/hooks/fox-voice.sh say "<msg>" <level>`:
 - blocked → level `blocked`, then stop and wait
 - done (tests green, committed, pushed) → level `done`, with a 3-line summary
+```
+
+**reports/sprint-{N}.md** (team mode — written at milestone completion, for the product owner; plain language, no jargon):
+```markdown
+# Sprint Report — Milestone {N}: {name}
+**Sprint**: {start} → {end} | **Owner**: {Owner} | **For**: {product owner} | **Version**: v{X}
+
+## Sprint goal
+{one sentence} — **{Met | Partly met | Not met}**
+
+## Delivered
+- {user-visible outcome} — {demo/preview link if any}
+
+## Not delivered (and why)
+- {item} — {reason · moved to next sprint / dropped}
+
+## Quality
+CI: {green/red} · Audit call: {PROCEED | FIX_REQUIRED | DISCUSS} · Open risks: {one line each, or "None"}
+
+## Decisions needed from you
+- {decision, options, recommendation — or "None"}
+
+## Next sprint (proposed)
+{goal + top 3 backlog items}
+```
+
+**AGENTS.md** (team mode — project root, for teammates using other AI tools):
+```markdown
+# Agent Instructions
+
+This project is run with Mr Fox (https://github.com/iabheejit/fox-os). Whatever tool you use:
+- Read CLAUDE.md and .claude/milestones.md before starting; work on the current milestone's branch, never main.
+- The current plan is in .claude/plans/. Stay inside its scope; anything else goes to the backlog.
+- CI (.github/workflows/) is the gate: tests, type checks, lint and secret scan must pass before merge.
+- Don't edit .claude/ state files (milestones, audit-trail, session-log, versions) — the owner's Mr Fox session maintains them.
 ```
 
 **session-log.md**:
